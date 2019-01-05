@@ -246,7 +246,7 @@ def main() -> None:
                                 tb_active=True, resume=False, buffer=buf,
                                 lr_mul=1/1.5 ** 1, temp_cutoff=15,
                                 playouts=400, kl_tgt=15e-4)
-    pipeline.run(1700)
+    pipeline.run(0)
 
 
 if __name__ == '__main__':
