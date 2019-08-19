@@ -1,8 +1,9 @@
 from keras.models import Model, load_model
 
 from c4game import C4Game
-from mcts import MCTS
-from dnn import scaled_mse_loss, azero_loss
+# from mcts import MCTS
+from mcts_v2 import MCTS
+from dnn import azero_loss
 
 
 def vs_ai(mdl: Model, go_first: bool = True) -> None:
@@ -31,17 +32,21 @@ def vs_ai(mdl: Model, go_first: bool = True) -> None:
                     pass
         else:
             # ai
-            searcher = MCTS(game, False, mdl, 5, 100)
+            searcher = MCTS(game, False, mdl, 3, 30, 10)
+            searcher.search_for_time(10)
+            print(searcher.top_node.N)
             move = searcher.pick_move()
             game.play_move(move)
             # pv
             pv = searcher.get_pv()
-            print(f'Expected score: {pv[0].Q}')
+            print(f'Expected win prob: {round((pv[0].Q / 2 + 0.5) * 100, 2)}%')
+            # print('Calibrated score: '
+            #       f'{2.9068063325925184 * math.tan(1.548090805 * pv[0].Q)}')
             # for i, node in enumerate(pv):
             #     if node.move is None:
             #         continue
             #     print(node)
-            if pv[0].Q < -0.9:
+            if pv[0].Q < -0.95 and len(game.move_history) > 30:
                 print(game, '\nI resign!')
                 break
         print(game)
@@ -50,7 +55,6 @@ def vs_ai(mdl: Model, go_first: bool = True) -> None:
 
 
 if __name__ == '__main__':
-    vs_ai(load_model('./test11/save_1840.ntwk',
-                     custom_objects={'scaled_mse_loss': scaled_mse_loss,
-                                     'azero_loss': azero_loss}),
+    vs_ai(load_model('./testXVI/save_2071.ntwk',
+                     custom_objects={'azero_loss': azero_loss}),
           True)

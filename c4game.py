@@ -62,7 +62,7 @@ class C4Game:
         Returns
         -------
         ret: `np.ndarray`
-            Inputs to the neural network
+            Inputs
         """
         # no need for legal moves plane
         # start off with the legal moves input plane
@@ -82,7 +82,29 @@ class C4Game:
         for pos in last_n:
             ret.append((pos == -1).astype('float'))
             ret.append((pos == 1).astype('float'))
-        return np.array(ret).reshape(7, 6, self.history_frames * 2 + 1)
+        return np.moveaxis(np.array(ret), 0, 2)
+
+    def simple_state(self) -> int:
+        """
+        Returns
+        -------
+        ret: `int`
+            Unique integer representing state
+        """
+        # 85 bits required
+        # 84 bits for position
+        # 1 bit for turn (kind of redundant, but why not)
+        # maybe player sets up some strange position
+        ret = 0
+        for r, row in enumerate(self.position):
+            for c, v in enumerate(row):
+                if v == -1:
+                    ret |= 1 << 42 + r * 7 + c
+                elif v == 1:
+                    ret |= 1 << r * 7 + c
+        if self.to_move == -1:
+            ret |= 1 << 84
+        return ret
 
     def state_copy(self) -> 'C4Game':
         """
@@ -163,9 +185,6 @@ class C4Game:
         term:
             1 if 4 in a row is present on the board else 0 if draw else None
         """
-        # check board full
-        if not any(self.legal_moves()):
-            return 0
         # check columns
         for col in self.position:
             # start from the bottom of the column (index 0)
@@ -184,6 +203,9 @@ class C4Game:
             # non-main diagonal
             if C4Game.find_four(flipped.diagonal(i)):
                 return 1
+        # check board full
+        if not any(self.legal_moves()):
+            return 0
         return None
 
     def __str__(self) -> str:

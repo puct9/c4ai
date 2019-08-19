@@ -10,7 +10,8 @@ from keras.models import Model  # , load_model
 from keras.utils import to_categorical
 from keras.callbacks import TensorBoard
 
-import dnn2 as dnn
+# import dnn
+import dnn
 from selfplay import do_selfplay
 
 
@@ -21,46 +22,13 @@ class TrainingPipeline:
     """
 
     def __init__(self, playouts: int = 200,
-                 history: int = 1, c_puct: float = 5, dir_alpha: float = 0.16,
+                 history: int = 1, c_puct: int = 5, dir_alpha: float = 0.16,
                  buffer: deque = None, buffer_len: int = 10000,
                  model: Model = None, save_path: str = None,
                  resume: bool = False, lr_mul: float = 1,
                  tb_active: bool = False, kl_tgt: float = 2e-3,
-                 temp_cutoff: int = 32, minibatch_size: int = 256) -> None:
-        """
-        Parameters
-        ----------
-        playouts: `int`
-            Default 200. The amount of playouts for each MCTS search for
-            training games
-        history: `int`
-            Default 1. The amount of previous board states (including current)
-            to include in the input planes.
-        c_puct: `float`
-            Default 5. The constant controlling exploration
-        dir_alpha: `float`
-            Default 0.16. The alpha to use for diriclet noise for training
-            games
-        buffer: `collections.deque`
-            Default None. The training buffer of positions. If no buffer is
-            passed, a new empty one would be instantiated
-        buffer_len: `int`
-            Default 10000. The amount of past positions to store in the buffer
-            before they are discarded
-        model: `keras.models.Model`
-            Default None. The neural network to load from. If no model is
-            passed, a new one would be instantiated
-        save_path: `str`
-            Default None. The save directory. If no save_path is passed, the
-            path would be named "tmp0"
-        resume: `bool`
-            Default False. Will resume from directory, model and buffer if
-            applicable if resume is True, else a new run is created
-        lr_mul: `float`
-            Default 1. The learning rate multiplier
-        tb_active: `bool`
-            Default False.
-        """
+                 temp_cutoff: int = 32, minibatch_size: int = 256,
+                 n_sp: int = 1, mcts_batch_size: int = 10) -> None:
         # safety checks
         if save_path:
             if os.path.exists(save_path) and not resume:
@@ -75,10 +43,12 @@ class TrainingPipeline:
         self.playouts = playouts
         self.history = history
         self.c_puct = c_puct
+        self.mcts_batch_size = mcts_batch_size
         self.dir_alpha = dir_alpha
         self.learning_rate = 2e-3  # 0.002
         self.lr_multiplier = lr_mul  # beta
         self.minibatch_size = minibatch_size
+        self.n_sp = n_sp
         self.train_epochs = 5
         self.kl_tgt = kl_tgt  # 0.15 by default
         self.temp_cutoff = temp_cutoff
@@ -97,10 +67,12 @@ class TrainingPipeline:
               f'Saving to: {self.save_path}\n'
               f'Board parameters:\nSearch parameters:'
               f'\nPlayouts={self.playouts} | History per player={self.history}'
-              f' | CPUCT={self.c_puct} | Training dirichlet={self.dir_alpha}\n'
+              f' | CPUCT={self.c_puct} | Training dirichlet={self.dir_alpha}'
+              f' | MCTS batch size={self.mcts_batch_size}\n'
               f'Training parameters:\nLR={self.learning_rate} | Minibatch size'
               f'={self.minibatch_size} | Training epochs={self.train_epochs} |'
               f' LR Multiplier={self.lr_multiplier} | KL Target={self.kl_tgt}'
+              f'\nSP games per step={self.n_sp}'
               f'\nTensorboard Active: {"yes" if tb_active else "no"}')
         print(f'Graph summary:')
         self.model.summary()
@@ -134,8 +106,7 @@ class TrainingPipeline:
             # W
             equivalent.append((state, winner, move_made, mvisits))
             # flipped
-            equivalent.append((np.fliplr(state.reshape(3, 7, 6)
-                                         ).reshape(7, 6, 3),
+            equivalent.append((state[::-1],
                                winner, move_made[::-1], mvisits[::-1]))
         self.data_buffer.extend(equivalent)
 
@@ -149,23 +120,22 @@ class TrainingPipeline:
         -------
         `None`
         """
-        gen = do_selfplay(1, self.playouts,
+        gen = do_selfplay(self.n_sp, self.playouts,
                           self.c_puct, self.model,
-                          self.dir_alpha, self.temp_cutoff)
-        # we're only doing 1 so we can just take the data via next() and the
-        # generator will end
-        states, result, moves, mvisits = next(gen)  # this is next gen stuff
-        # result will be 1 if won by connecting 4, else it was a draw
-        data = []
-        for state, move, _mvisits in zip(states[::-1], moves[::-1],
-                                         mvisits[::-1]):
-            data.append((state, result, to_categorical([move],
-                                                       num_classes=7)[0],
-                         _mvisits * self.playouts / (self.playouts - 1)))
-            # (above), multiply by scalar because
-            # one playout is spent on expanding the root node
-            result *= -1
-        self.ext_equivalent_data(data)
+                          self.dir_alpha, self.temp_cutoff,
+                          self.mcts_batch_size)
+        for states, result, moves, mvisits in gen:  # this is next gen stuff
+            # result will be 1 if won by connecting 4, else it was a draw
+            data = []
+            for state, move, _mvisits in zip(states[::-1], moves[::-1],
+                                             mvisits[::-1]):
+                data.append((state, result, to_categorical([move],
+                                                           num_classes=7)[0],
+                             _mvisits * self.playouts / (self.playouts - 1)))
+                # (above), multiply by scalar because
+                # one playout is spent on expanding the root node
+                result *= -1
+            self.ext_equivalent_data(data)
 
     def update_network(self, e: int = 0) -> None:
         """
@@ -208,12 +178,12 @@ class TrainingPipeline:
         # adaptive learning rate!
         if kl > self.kl_tgt * 2 and self.lr_multiplier > 1e-10:
             self.lr_multiplier /= 1.5
-        elif kl < self.kl_tgt / 2 and self.lr_multiplier < 17:
+        elif kl < self.kl_tgt / 2 and self.lr_multiplier < 40:
             self.lr_multiplier *= 1.5
         print(f'Retrained network successfully. kl:{round(float(kl), 5)}, '
               f'lr_mul:{round(self.lr_multiplier, 3)}')
 
-    def run(self, start_cycle: int = 0) -> None:
+    def run(self, start_cycle: float = 0) -> None:
         """
         Start running the training cycle
         Parameters
@@ -225,12 +195,11 @@ class TrainingPipeline:
         cycle = start_cycle
         while True:
             cycle += 1
-            for _ in range(1):
-                self.gen_sp_data()
+            self.gen_sp_data()
             print(f'INFO: cycle={cycle}, datapoints={len(self.data_buffer)}')
             if len(self.data_buffer) >= self.minibatch_size * 2:
                 self.update_network(cycle)
-            if cycle % 10:
+            if cycle % 1:
                 continue
             self.model.save(os.path.join(self.save_path, f'save_{cycle}.ntwk'))
             pickle.dump(self.data_buffer, open(os.path.join(self.save_path,
@@ -240,13 +209,18 @@ class TrainingPipeline:
 
 def main() -> None:
     model = dnn.create_model(3)
-    path = './test0'
+    # model = load_model('./temp/save_2071.ntwk',
+    #                    custom_objects={'azero_loss': dnn.azero_loss})
+    path = './temp'
+    # buf = pickle.load(open('./temp/data_buffer.dbuf', 'rb'))
     buf = None
-    pipeline = TrainingPipeline(model=model, save_path=path, dir_alpha=10/7,
+    pipeline = TrainingPipeline(model=model, save_path=path, dir_alpha=1.4,
                                 tb_active=True, resume=False, buffer=buf,
-                                lr_mul=1/1.5 ** 1, temp_cutoff=15,
-                                playouts=400, kl_tgt=15e-4)
-    pipeline.run(0)
+                                lr_mul=1/1.5**-1, temp_cutoff=12,
+                                playouts=600, kl_tgt=1e-3, c_puct=3,
+                                buffer_len=100000, n_sp=10, minibatch_size=512,
+                                mcts_batch_size=10)
+    pipeline.run(0)  # put the number it is up to here
 
 
 if __name__ == '__main__':

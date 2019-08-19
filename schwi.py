@@ -6,34 +6,29 @@ import re
 import time
 import threading
 
+import cv2
+import numpy as np
 import tensorflow as tf
 from keras.models import Model, load_model
 
 from c4game import C4Game
-from mcts import MCTS
+# from mcts import MCTS
+from mcts_v2 import MCTS
 from dnn import azero_loss
 
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 # network
-MODEL = load_model('./test11/save_1840.ntwk',
+MODEL_FILE = './testXVI/save_2071.ntwk'
+MODEL = load_model(MODEL_FILE,
                    custom_objects={'azero_loss': azero_loss})
 POSITION = C4Game()
 
 
 class SearchThread(threading.Thread):
 
-    def __init__(self, *, stime: int = None, nodes: int = 2000):
-        """
-        Instantiate a SearchThread
-        Parameters
-        ----------
-        stime: `int`
-            Search time (seconds)
-        nodes: `int`
-            Amount of nodes for MCTS
-        """
+    def __init__(self, *, stime: int = None, nodes: int = 5000):
         super(SearchThread, self).__init__()
         self._stopping = threading.Event()
         self._target = search
@@ -44,57 +39,53 @@ class SearchThread(threading.Thread):
             self._kwargs = {'nodes': nodes}
 
     def stop(self):
-        """Stop the search after the next batch of playouts"""
         self._stopping.set()
 
     def stopped(self) -> bool:
-        """
-        Shows whether the next batch of playouts would be the last, or if the
-        search has already been stopped by the stop command
-        Returns
-        -------
-        stopped: `bool`
-            True if the search is stopping or stopped, else False
-        """
         return self._stopping.is_set()
 
 
 def search(position: C4Game, model: Model, *,
-           stime: int = None, nodes: int = 2000):
-    """
-    Search function, searching from a given position, controlled by thread
-    Parameters
-    ----------
-    position: `C4Game`
-        The game state to search from
-    model: `keras.models.Model`
-        The neural network to use
-    stime: `int`
-        Search time in seconds (optional)
-    nodes: `int`
-        Amount of nodes to search (optional)
-    """
+           stime: int = None, nodes: int = 5000):
     if stime is not None:
         nodes = float('inf')
     # search thread method
-    eng = MCTS(position, False, model, 5, 25)
+    eng = MCTS(position, False, model, 3, 2, 10)
     start_time = time.time()
+    cycle = -1
+    pv = []
     while eng.playouts < nodes:
+        cycle += 1
         eng.playout_to_max()
-        eng.playouts += min(25, nodes - eng.playouts)
+        eng.playouts += min(30, nodes - eng.playouts)
+        # check if the pv has changed
+        if not cycle % 5:  # == 0, arbitrarily chosen number
+            new_pv = eng.get_pv()
+            if len(new_pv) != len(pv):
+                pv = new_pv
+                print(f'nodes {eng.playouts} pv ' + ' '.join(str(x.move)
+                      for x in pv))
+            else:
+                if not all(a is b for a, b in zip(pv, new_pv)):
+                    pv = new_pv
+                    print(f'nodes {eng.playouts} pv ' +
+                          ' '.join(str(x.move) for x in pv))
         # check if thread has been asked to end
         if SEARCH_THREAD.stopped():
             break
         if stime is not None and time.time() - start_time > stime:
             break
+    # show prior information
+    print('\n'.join(str(x) for x in eng.top_node.children))
     pv = eng.get_pv()
-    print('pv ' + ' '.join(str(x.move) for x in pv))
+    print(f'nodes {eng.playouts} pv ' + ' '.join(str(x.move) for x in pv))
     print(f'bestmove {pv[0]}')
     SEARCH_THREAD.stop()  # set stopped flag
 
 
 def main():
     global SEARCH_THREAD
+    global POSITION
     SEARCH_THREAD = None
     # prepare the model
     MODEL._make_predict_function()
@@ -114,6 +105,8 @@ def main():
             elif match_t:
                 stime = int(match_t.group(1))
                 SEARCH_THREAD = SearchThread(stime=stime)
+            else:
+                SEARCH_THREAD = SearchThread()
             SEARCH_THREAD.start()
             searching = True
         if inp == 'd':
@@ -135,7 +128,55 @@ def main():
                 POSITION.undo_move()
             except Exception:
                 continue
+        if inp == 'static' and not searching:
+            # show static evaluation of policy net
+            value, policy = MODEL.predict(np.expand_dims(POSITION.state, 0))
+            print(f'V={value[0][0]}')
+            print('\n'.join(f'MV={i} P={round(100 * p, 2)}%'
+                            for i, p in enumerate(policy[0])))
+        if inp.startswith('position') and not searching:
+            inp = inp.split(' ')
+            if len(inp) < 2:
+                continue
+            if inp[1] == 'startpos':
+                POSITION = C4Game()
+                if len(inp) > 3 and inp[2] == 'moves':
+                    for m in inp[3:]:
+                        try:
+                            POSITION.play_move(int(m))
+                        except Exception as e:
+                            print(e)
+                            POSITION = C4Game()
+            if len(inp) > 3 and inp[1] == 'set':
+                POSITION = C4Game()
+                pstr = inp[2]  # position string representation
+                gstr = ''  # geometric string representation
+                for c in pstr:
+                    if c.upper() in 'XO/':
+                        gstr += c.upper()
+                    if c.isdigit():
+                        gstr += ' ' * int(c)
+                gstr = gstr.split('/')
+                rpos = np.array([list(x) for x in gstr])  # rotated position
+                pos90 = np.rot90(rpos, k=3)  # rotated correctly
+                mat = np.zeros((7, 6)) - (pos90 == 'X') + (pos90 == 'O')
+                POSITION.position = mat
+                POSITION.to_move = -1 if inp[3].upper() == 'X' else 1
+                POSITION.position_history = [mat.copy()]
+            inp = ' '.join(inp)
+        if inp.startswith('image'):
+            print(np.moveaxis(POSITION.state, 2, 0))
+            if len(inp.split(' ')) == 2:
+                fout = inp.split(' ')[1]  # file out name
+                try:
+                    cv2.imwrite(fout, POSITION.state * 255)
+                except Exception as e:
+                    print(e)
+        if inp == 'exit' or inp == 'quit':
+            print('Goodbye ~ uwu')
+            os.sys.exit()
 
 
 if __name__ == '__main__':
+    print(f'schwi20190816 is using {MODEL_FILE} and at your service ~ owo')
     main()

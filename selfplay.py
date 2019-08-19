@@ -5,12 +5,14 @@ import numpy as np
 from keras.models import Model
 
 from c4game import C4Game
-from mcts import MCTS
+# from mcts import MCTS
+from mcts_v2 import MCTS
 
 
 def do_selfplay(num: int, playouts: int,
                 c_puct: int, mdl: Model,
-                dir_alpha: float, temp_cutoff: int) -> tuple:
+                dir_alpha: float, temp_cutoff: int,
+                mcts_batch_size: int) -> tuple:
     """
     Do and save to a file some selfplay games
     Parameters
@@ -33,7 +35,8 @@ def do_selfplay(num: int, playouts: int,
     for game_num in range(num):
         print('Starting self-play game')
         game = C4Game()
-        searcher = MCTS(game, True, mdl, c_puct, playouts, dir_alpha)
+        searcher = MCTS(game, True, mdl, c_puct, playouts, dir_alpha=dir_alpha,
+                        batch_size=mcts_batch_size)
         state_logs = []
         move_logs = []
         move_search_logs = []
@@ -47,18 +50,14 @@ def do_selfplay(num: int, playouts: int,
             move_logs.append(move)
             game.play_move(move)
             # tree reuse
-            searcher_ = MCTS(game, True, mdl, c_puct, playouts, dir_alpha)
+            searcher_ = MCTS(game, True, mdl, c_puct, playouts,
+                             dir_alpha=dir_alpha, batch_size=mcts_batch_size)
             for n in searcher.top_node.children:
                 if n.move == move:
                     n.move = None
                     n.parent = None
                     n.P = None
                     searcher_.top_node = n
-            # print(f'info winrate {searcher_.top_node.Q * 50 + 50}%')
-            # print('Tree reuse efficiency '
-            #       f'[{searcher_.top_node.N}/{playouts}]')
-            # print(game)
+                    break
             searcher = searcher_
-        # print(f'Finished {game_num + 1}/{num} self-play games, '
-        #       f'res={game.check_terminal()}')
         yield state_logs, game.check_terminal(), move_logs, move_search_logs

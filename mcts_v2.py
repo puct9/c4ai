@@ -1,4 +1,19 @@
-# import random
+"""
+Version 2 of UCT (MCTS variant) search engine
+The main differences:
+    - C_PUCT now grows with search time, as per A0 paper
+    - Playouts are now 'batched'. Whilst playouts are now slightly less
+        quality, the overall search should be faster and stronger
+    - Always select forced win to avoid issues with virtual loss (see batching)
+        and the 'U' term in computing the score for a node in greedy node
+        selection in finding the leaf node in the search
+    - Forced losses are pruned (Q=-inf); this is supposed to help especially
+        at low node counts
+    - FPU (first play urgency) set to -1, as per A0 paper. This means that
+        nodes without any visits will return a default Q value of -1, assuming
+        that the move is losing
+"""
+import time
 from typing import List
 
 import numpy as np
@@ -8,6 +23,7 @@ from c4game import C4Game
 
 
 USE_ITERATIVE_FOR_GREEDY_TRAVERSAL = False
+DO_SEARCH_TREE_PRUNING = False
 
 
 def softmax(x):
@@ -32,6 +48,10 @@ class MCTSNode:
     A node of MCTS tree
     """
 
+    # memory efficiency and performance
+    __slots__ = ('move', 'parent', 'children', 'prune', 'terminal',
+                 'terminal_score', 'P', 'N', 'W', 'VL')
+
     def __init__(self, parent: "MCTSNode" = None,
                  move: int = None, prior: float = None,
                  terminal: bool = False, terminal_score: int = 0) -> None:
@@ -52,12 +72,24 @@ class MCTSNode:
         self.move = move
         self.parent = parent
         self.children: List[MCTSNode] = []
+        self.prune = False  # set to true if it is a losing move
         self.terminal = terminal  # denotes the winner of the game.
-        self.terminal_score = terminal_score  # 1 if win, -1 if lose, 0 if tie
+        self.terminal_score = terminal_score  # 1 if win, 0 if tie
         self.P = prior  # prior probability of selecting this move
-        self.N = 0  # number of visits
-        self.Q = 0  # default value
-        self.W = 0  # default value
+        self.N = 0  # number of visits; default value
+        self.W = 0  # cumulative of value backpropagation; default value
+        self.VL = 0  # virtual loss; default value
+
+    @property
+    def Q(self) -> int:
+        if self.prune:
+            return -2 * self.N + ((self.W - self.VL) /
+                                  (self.N + self.VL))
+        if not self.N + self.VL:
+            return -1  # FPU in alphazero is -1
+        # do not apply VL if terminal
+        return ((self.W - self.VL) /
+                (self.N + self.VL))
 
     def value(self, c_puct: float) -> float:
         """
@@ -72,7 +104,13 @@ class MCTSNode:
         score: `float`
             Q + c_puct * P * sqrt(parent_N) / (1 + N)
         """
-        u = (c_puct * self.P * (self.parent.N) ** 0.5 / (1 + self.N))
+        if self.terminal and self.terminal_score:  # win
+            return float('inf')
+        # c_puct_base = 19652, as described in alphazero
+        scale = np.log((self.parent.N + 19652 + 1) / 19652) + c_puct
+        u = (scale * self.P * (self.parent.N  # + self.parent.VL - self.VL
+                               ) ** 0.5 /
+             (1 + self.N))  # + self.VL?
         return self.Q + u
 
     def backprop(self, value: float) -> None:
@@ -87,8 +125,9 @@ class MCTSNode:
         # first we update ourselves
         self.N += 1
         self.W += value
-        self.Q = self.W / self.N
         # now we backprop
+        # remove our virtual loss
+        self.VL -= 1
         if self.parent:  # is not None
             self.parent.backprop(-value)
 
@@ -110,23 +149,37 @@ class MCTSNode:
         if USE_ITERATIVE_FOR_GREEDY_TRAVERSAL:
             curr = self
             while True:
+                curr.VL += 1
                 if curr.move is not None:
                     position.play_move(curr.move)
-                if not curr.children:
+                if not curr.children or curr.terminal:
                     return curr
                 child_scores = [c.value(c_puct) for c in curr.children]
                 curr = curr.children[child_scores.index(max(child_scores))]
             raise Exception("Tree traversal error")
-        # BELOW: OLD RECURSIVE ALGORITHM
+        # BELOW: RECURSIVE ALGORITHM
+        self.VL += 1
         if self.move is not None:  # move is (None, None) if passing
             position.play_move(self.move)
         if not self.children:
             return self
         # more performant than np.argmax by a lot
         # select the best child
-        child_scores = [c.value(c_puct) for c in self.children]
-        return (self.children[child_scores.index(max(child_scores))]
-                .to_leaf(c_puct, position))
+        max_child_score = float('-inf')
+        max_child_index = 0
+        for i, c in enumerate(self.children):
+            v = c.value(c_puct)
+            if v > max_child_score:
+                max_child_score = v
+                max_child_index = i
+        if DO_SEARCH_TREE_PRUNING:
+            if max_child_score < -1:  # all losing, this move is won
+                self.terminal = True
+                self.terminal_score = 1
+                return self
+            elif max_child_score == float('inf'):  # this move is lost
+                self.prune = True  # this node will never be selected again
+        return (self.children[max_child_index].to_leaf(c_puct, position))
 
     def expand(self, priors: np.ndarray, position: C4Game) -> None:
         """
@@ -178,7 +231,8 @@ class MCTS:
     """
 
     def __init__(self, position: C4Game, stochastic: bool, network: Model,
-                 c_puct: float, playouts: int, dir_alpha: float = 1.4):
+                 c_puct: float, playouts: int, batch_size: int = 16,
+                 dir_alpha: float = 1.4):
         """
         Parameters
         ----------
@@ -203,52 +257,73 @@ class MCTS:
         self.playouts = playouts
         self.stochastic = stochastic
         self.dir_alpha = dir_alpha
+        self.batch_size = batch_size  # for parallel-ish
 
-    def playout_to_max(self, dir_alpha: float = 1.4) -> np.ndarray:
+    def playout_to_max(self) -> np.ndarray:
         """
         Returns
         -------
         search_probs: `np.ndarray`
             A vector of move probabilites following mcts
         """
-        do_iters = self.playouts - self.top_node.N  # must not change
-        done_iters = 0
-        while done_iters < do_iters:
-            done_iters += 1
+        while self.top_node.N < self.playouts:
             # recursively greedily select node via puct algorithm
-            look_position = self.base_position.state_copy()
-            leaf = self.top_node.to_leaf(self.c_puct, look_position)
+            leafs = []  # parallel-ish
+            for _ in range(self.batch_size):
+                look_position = self.base_position.state_copy()
+                leaf = self.top_node.to_leaf(self.c_puct, look_position)
+                leafs.append((leaf, look_position))
 
             # evaluate
-            if leaf.terminal:
-                # backprop also undoes all our moves
-                leaf.backprop(abs(leaf.terminal_score))
-                continue
+            evaluations = [None] * self.batch_size
+            batch_priors = [None] * self.batch_size
+            batch_positions = []
+            for i, (leaf, look_position) in enumerate(leafs):
+                if leaf.terminal:
+                    evaluations[i] = -abs(leaf.terminal_score)
+                else:
+                    batch_positions.append(look_position.state)
 
             # use the neural network
-            leaf_value, priors = self.network.predict(
-                np.array([look_position.state]))
+            # TODO: complete
+            if batch_positions:
+                leaf_value, priors = self.network.predict(
+                    np.array(batch_positions))
+            else:
+                leaf_value, priors = [], []
+            # populate evaluations
+            _count = 0
+            for i, ev in enumerate(evaluations):
+                if ev is None:
+                    evaluations[i] = leaf_value[_count, 0]
+                    # if we needed an evaluation we also need an expansion
+                    batch_priors[i] = priors[_count]
+                    _count += 1
             # leaf_value is how good it is for CURRENT player of the state
             # expand, but before that, add dirichlet noise
             # dirichlet noise for legal moves only
             if self.stochastic:  # we are doing a selfplay game
-                legal_moves = look_position.legal_moves()
-                _dirichlet = np.random.dirichlet(
-                    [self.dir_alpha] * sum(legal_moves))
-                dirichlet = np.zeros(7)
-                ind = 0
-                for i, v in enumerate(legal_moves):
-                    if v:
-                        dirichlet[i] = _dirichlet[ind]
-                        ind += 1
-                leaf.expand((priors[0] + dirichlet) * 0.5, look_position)
+                for (leaf, look_position), prior in zip(leafs, batch_priors):
+                    if leaf.children or leaf.terminal:
+                        continue
+                    legal_moves = look_position.legal_moves()
+                    _dirichlet = np.random.dirichlet(
+                        [self.dir_alpha] * sum(legal_moves))
+                    dirichlet = np.zeros(7)
+                    ind = 0
+                    for i, v in enumerate(legal_moves):
+                        if v:
+                            dirichlet[i] = _dirichlet[ind]
+                            ind += 1
+                    leaf.expand((prior + dirichlet) * 0.5, look_position)
             else:
-                leaf.expand(priors[0], look_position)
-            if leaf.move is None:  # toppest node, first playout
-                leaf.backprop(-leaf_value[0, 0])
-                continue
+                for (leaf, look_position), prior in zip(leafs, batch_priors):
+                    # we could have 2 or more searches on one leaf
+                    if not leaf.children and not leaf.terminal:
+                        leaf.expand(prior, look_position)
             # backprop
-            leaf.backprop(-leaf_value[0, 0])
+            for (leaf, _), ev in zip(leafs, evaluations):
+                leaf.backprop(-ev)
 
         # calculate root children probabilities, and fill in the invalid ones
         # with 0
@@ -265,6 +340,24 @@ class MCTS:
                 root_children_probs.append(0)
 
         return root_children_probs
+
+    def search_for_time(self, duration: float) -> np.ndarray:
+        """
+        Parameters
+        ----------
+        duration: `float`
+            The duration of time to search the position
+        Returns
+        -------
+        search_probs: `np.ndarray`
+            A vector of move probabilites following mcts
+        """
+        start_time = time.time()
+        ret = self.playout_to_max()
+        while time.time() - start_time < duration:
+            self.playouts += self.batch_size * 3
+            ret = self.playout_to_max()
+        return ret
 
     def pick_move(self, temp: float = 1e-3
                   ) -> int:
@@ -292,15 +385,7 @@ class MCTS:
         # but due to overflow problems, we rearrange
         # v ^ (1 / temp) = exp(log(v ^ (1 / temp))) = exp(log(v) / temp)
         new_probs = softmax(np.log(np.array(visits) + 1e-10) / temp)
-        # give this a try
         return np.random.choice(self.top_node.children, 1, p=new_probs)[0].move
-        # rand = random.random()  # range [0, 1]
-        # _sum = 0
-        # for n, p in zip(self.top_node.children, new_probs):
-        #     _sum += p
-        #     if _sum >= rand:
-        #         return n.move
-        # return n.move  # just in case, because floating point numbers are :|
 
     def get_pv(self) -> List[MCTSNode]:
         """
