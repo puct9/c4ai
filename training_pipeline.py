@@ -22,13 +22,59 @@ class TrainingPipeline:
     """
 
     def __init__(self, playouts: int = 200,
-                 history: int = 1, c_puct: int = 5, dir_alpha: float = 0.16,
+                 history: int = 1, c_puct: float = 5, dir_alpha: float = 0.16,
                  buffer: deque = None, buffer_len: int = 10000,
                  model: Model = None, save_path: str = None,
                  resume: bool = False, lr_mul: float = 1,
                  tb_active: bool = False, kl_tgt: float = 2e-3,
                  temp_cutoff: int = 32, minibatch_size: int = 256,
                  n_sp: int = 1, mcts_batch_size: int = 10) -> None:
+        """
+        Parameters
+        ----------
+        playouts: `int`
+            The amount of playouts for each MCTS search in training games,
+            defaulting to 200
+        history: `int`
+            Default 1. The amount of previous board states (including current)
+            to include in the input planes
+        c_puct: `float`
+            Default 5. The constant controlling exploration. This is slightly
+            changed in the way it affects MCTS in the second version, which
+            include virtual loss, and a non-constant c_puct. In this case, it
+            acts as c_puctbase
+        dir_alpha: `float`
+            Default 0.16. The alpha to use for diriclet noise in training games
+        buffer: `collections.deque`
+            Default None. The training buffer of past positions. If no buffer
+            is given, a new one is automatically instantiated
+        buffer_len: `int`
+            Default 10000. The number of past positions to store
+        model: `keras.models.Model`
+            Default None. The neural network to load from. If no model is
+            given, a new one is automatically instantiated
+        save_path: str
+            Default 'tmp0'. The save directory.
+        resume: `bool`
+            Default False. Set to True if resuming training from a save
+        lr_mul: `float`
+            The learning rate multiplier. (This will be automatically
+            controlled once training starts)
+        tb_active: `bool`
+            Default False. Whether to write training metrics to tensorboard or
+            not.
+        kl_tgt: `float`
+            Default 2e-3. The KL divergence target.
+        temp_cutoff: `int`
+            Default 12. The amount of moves in training games where randomness
+            is applied in move selection
+        minibatch_size: `int`
+            Default 256. The batch size used for retraining the neural network
+        n_sp: `int`
+            Default 1. The amout of self-play games to play before each step
+        mcts_batch_size: `int`
+            Default 10. The level of parallisation in MCTS
+        """
         # safety checks
         if save_path:
             if os.path.exists(save_path) and not resume:
