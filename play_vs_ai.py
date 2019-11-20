@@ -40,12 +40,6 @@ def vs_ai(mdl: Model, go_first: bool = True) -> None:
             # pv
             pv = searcher.get_pv()
             print(f'Expected win prob: {round((pv[0].Q / 2 + 0.5) * 100, 2)}%')
-            # print('Calibrated score: '
-            #       f'{2.9068063325925184 * math.tan(1.548090805 * pv[0].Q)}')
-            # for i, node in enumerate(pv):
-            #     if node.move is None:
-            #         continue
-            #     print(node)
             if pv[0].Q < -0.95 and len(game.move_history) > 30:
                 print(game, '\nI resign!')
                 break

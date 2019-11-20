@@ -5,10 +5,10 @@ from collections import deque
 from typing import List, Tuple
 
 import numpy as np
+import tensorflow as tf
 import keras.backend as K
-from keras.models import Model  # , load_model
+from keras.models import Model, load_model
 from keras.utils import to_categorical
-from keras.callbacks import TensorBoard
 
 # import dnn
 import dnn
@@ -22,7 +22,7 @@ class TrainingPipeline:
     """
 
     def __init__(self, playouts: int = 200,
-                 history: int = 1, c_puct: float = 5, dir_alpha: float = 0.16,
+                 history: int = 1, c_puct: int = 5, dir_alpha: float = 0.16,
                  buffer: deque = None, buffer_len: int = 10000,
                  model: Model = None, save_path: str = None,
                  resume: bool = False, lr_mul: float = 1,
@@ -58,8 +58,8 @@ class TrainingPipeline:
         resume: `bool`
             Default False. Set to True if resuming training from a save
         lr_mul: `float`
-            The learning rate multiplier. (This will be automatically
-            controlled once training starts)
+            Default 1. The learning rate multiplier. (This will be
+            automatically controlled once training starts)
         tb_active: `bool`
             Default False. Whether to write training metrics to tensorboard or
             not.
@@ -98,16 +98,14 @@ class TrainingPipeline:
         self.train_epochs = 5
         self.kl_tgt = kl_tgt  # 0.15 by default
         self.temp_cutoff = temp_cutoff
-        if tb_active:
-            self.tf_callback = TensorBoard(log_dir=os.path.join(self.save_path,
-                                                                'logs'))
-            if resume:
-                self.tf_callback.write_graph = False
-        else:
-            self.tf_callback = None
         self.data_buffer = buffer if buffer else deque(maxlen=buffer_len)
         self.model = (model if model else
                       dnn.create_model(history * 2 + 1))
+        if tb_active:
+            self.tf_writer = tf.summary.FileWriter(os.path.join(
+                self.save_path, 'logs'), K.get_session().graph)
+        else:
+            self.tf_writer = None
         print('Training Pipeline fueled and ready for liftoff!'
               '\nSummary:\n'
               f'Saving to: {self.save_path}\n'
@@ -188,6 +186,8 @@ class TrainingPipeline:
         Update the network with latest training data.
         Parameters
         ----------
+        e: int
+            The epoch
         Returns
         -------
         `None`
@@ -204,12 +204,10 @@ class TrainingPipeline:
             # callback only on first training epoch
             # hence tensorboard / history will be reflective
             # of a model's true performance, disregarding overfitting
-            if self.tf_callback and not i:
-                self.model.fit(x=states, y=[results, mvisits],
-                               batch_size=self.minibatch_size,
-                               callbacks=[self.tf_callback],
-                               verbose=False)
-                self.tf_callback.write_graph = False
+            if self.tf_writer and not i:
+                train_hist = self.model.fit(x=states, y=[results, mvisits],
+                                            batch_size=self.minibatch_size,
+                                            verbose=False)
             else:
                 self.model.fit(x=states, y=[results, mvisits],
                                batch_size=self.minibatch_size,
@@ -228,8 +226,17 @@ class TrainingPipeline:
             self.lr_multiplier *= 1.5
         print(f'Retrained network successfully. kl:{round(float(kl), 5)}, '
               f'lr_mul:{round(self.lr_multiplier, 3)}')
+        # make the summary
+        summary = tf.Summary()
+        for key, value in train_hist.history.items():
+            summary.value.add(tag=key, simple_value=value[0])
+        # we have some custom scalar(s) to add
+        summary.value.add(tag='lr',
+                          simple_value=self.lr_multiplier)
+        self.tf_writer.add_summary(summary, e)
+        self.tf_writer.flush()
 
-    def run(self, start_cycle: float = 0) -> None:
+    def run(self, start_cycle: int = 0) -> None:
         """
         Start running the training cycle
         Parameters
@@ -254,19 +261,20 @@ class TrainingPipeline:
 
 
 def main() -> None:
-    model = dnn.create_model(3)
-    # model = load_model('./temp/save_2071.ntwk',
-    #                    custom_objects={'azero_loss': dnn.azero_loss})
-    path = './temp'
-    # buf = pickle.load(open('./temp/data_buffer.dbuf', 'rb'))
-    buf = None
+    # model = dnn.create_model(3)
+    model = load_model('./testXVIa/save_803.ntwk',
+                       custom_objects={'azero_loss': dnn.azero_loss})
+    path = './testXVIa'
+    buf = pickle.load(open('./testXVIa/data_buffer.dbuf', 'rb'))
+    # buf = None
+    # 5 lr
     pipeline = TrainingPipeline(model=model, save_path=path, dir_alpha=1.4,
-                                tb_active=True, resume=False, buffer=buf,
+                                tb_active=True, resume=True, buffer=buf,
                                 lr_mul=1/1.5**-1, temp_cutoff=12,
                                 playouts=600, kl_tgt=1e-3, c_puct=3,
                                 buffer_len=100000, n_sp=10, minibatch_size=512,
                                 mcts_batch_size=10)
-    pipeline.run(0)  # put the number it is up to here
+    pipeline.run(803)
 
 
 if __name__ == '__main__':

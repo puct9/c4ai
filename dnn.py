@@ -35,7 +35,7 @@ def create_model(planes: int) -> Model:
         v = BatchNormalization()(v)
         v = Activation('relu')(v)
         v = Flatten()(v)
-        v = Dense(32, activation='relu',
+        v = Dense(16, activation='relu',
                   kernel_regularizer=l2(reg_term))(v)
         value_head = Dense(1, activation='tanh',
                            kernel_regularizer=l2(reg_term),

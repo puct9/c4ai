@@ -1,4 +1,3 @@
-# import random
 from typing import List
 
 import numpy as np
@@ -294,13 +293,6 @@ class MCTS:
         new_probs = softmax(np.log(np.array(visits) + 1e-10) / temp)
         # give this a try
         return np.random.choice(self.top_node.children, 1, p=new_probs)[0].move
-        # rand = random.random()  # range [0, 1]
-        # _sum = 0
-        # for n, p in zip(self.top_node.children, new_probs):
-        #     _sum += p
-        #     if _sum >= rand:
-        #         return n.move
-        # return n.move  # just in case, because floating point numbers are :|
 
     def get_pv(self) -> List[MCTSNode]:
         """

@@ -102,7 +102,7 @@ class MCTSNode:
         Returns
         -------
         score: `float`
-            Q + c_puct * P * sqrt(parent_N) / (1 + N)
+            (Q + log((parent_N + cb) / cb) + cp) * P * sqrt(parent_N) / (1 + N)
         """
         if self.terminal and self.terminal_score:  # win
             return float('inf')
@@ -159,7 +159,7 @@ class MCTSNode:
             raise Exception("Tree traversal error")
         # BELOW: RECURSIVE ALGORITHM
         self.VL += 1
-        if self.move is not None:  # move is (None, None) if passing
+        if self.move is not None:
             position.play_move(self.move)
         if not self.children:
             return self
