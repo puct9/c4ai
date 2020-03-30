@@ -13,6 +13,7 @@ The main differences:
         nodes without any visits will return a default Q value of -1, assuming
         that the move is losing
 """
+import random
 import time
 from typing import List
 
@@ -285,10 +286,16 @@ class MCTS:
                     batch_positions.append(look_position.state)
 
             # use the neural network
-            # TODO: complete
+            # 50% chance to flip every position in the batch in training
+            flipped = False
+            if self.stochastic and random.random() > 0.5:
+                flipped = True
+                batch_positions = batch_positions[:, ::-1, :, :]
             if batch_positions:
                 leaf_value, priors = self.network.predict(
                     np.array(batch_positions))
+                if flipped:
+                    priors = priors[:, ::-1]
             else:
                 leaf_value, priors = [], []
             # populate evaluations
