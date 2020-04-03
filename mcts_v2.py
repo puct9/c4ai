@@ -370,7 +370,7 @@ class MCTS:
         # stochastic = selfplay game
         # apply the dirichlet noise at move selection
         dirichlet = np.random.dirichlet([self.dir_alpha] * len(search_probs))
-        noisy_probs = np.array(search_probs) + dirichlet
+        noisy_probs = np.array(search_probs) * 0.84 + dirichlet * 0.16
         # normally we would
         # let v = a vector of visits
         # v ^ (1 / temp)
