@@ -307,27 +307,10 @@ class MCTS:
                     batch_priors[i] = priors[_count]
                     _count += 1
             # leaf_value is how good it is for CURRENT player of the state
-            # expand, but before that, add dirichlet noise
-            # dirichlet noise for legal moves only
-            if self.stochastic:  # we are doing a selfplay game
-                for (leaf, look_position), prior in zip(leafs, batch_priors):
-                    if leaf.children or leaf.terminal:
-                        continue
-                    legal_moves = look_position.legal_moves()
-                    _dirichlet = np.random.dirichlet(
-                        [self.dir_alpha] * sum(legal_moves))
-                    dirichlet = np.zeros(7)
-                    ind = 0
-                    for i, v in enumerate(legal_moves):
-                        if v:
-                            dirichlet[i] = _dirichlet[ind]
-                            ind += 1
-                    leaf.expand((prior + dirichlet) * 0.5, look_position)
-            else:
-                for (leaf, look_position), prior in zip(leafs, batch_priors):
-                    # we could have 2 or more searches on one leaf
-                    if not leaf.children and not leaf.terminal:
-                        leaf.expand(prior, look_position)
+            for (leaf, look_position), prior in zip(leafs, batch_priors):
+                # we could have 2 or more searches on one leaf
+                if not leaf.children and not leaf.terminal:
+                    leaf.expand(prior, look_position)
             # backprop
             for (leaf, _), ev in zip(leafs, evaluations):
                 leaf.backprop(-ev)
@@ -385,13 +368,15 @@ class MCTS:
             ind = search_probs.index(max(search_probs))
             return ind
         # stochastic = selfplay game
-        visits = [n.N for n in self.top_node.children]
+        # apply the dirichlet noise at move selection
+        dirichlet = np.random.dirichlet([self.dir_alpha] * len(search_probs))
+        noisy_probs = np.array(search_probs) + dirichlet
         # normally we would
         # let v = a vector of visits
         # v ^ (1 / temp)
         # but due to overflow problems, we rearrange
         # v ^ (1 / temp) = exp(log(v ^ (1 / temp))) = exp(log(v) / temp)
-        new_probs = softmax(np.log(np.array(visits) + 1e-10) / temp)
+        new_probs = softmax(np.log(noisy_probs + 1e-10) / temp)
         return np.random.choice(self.top_node.children, 1, p=new_probs)[0].move
 
     def get_pv(self) -> List[MCTSNode]:
