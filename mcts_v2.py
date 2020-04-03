@@ -307,27 +307,10 @@ class MCTS:
                     batch_priors[i] = priors[_count]
                     _count += 1
             # leaf_value is how good it is for CURRENT player of the state
-            # expand, but before that, add dirichlet noise
-            # dirichlet noise for legal moves only
-            if self.stochastic:  # we are doing a selfplay game
-                for (leaf, look_position), prior in zip(leafs, batch_priors):
-                    if leaf.children or leaf.terminal:
-                        continue
-                    legal_moves = look_position.legal_moves()
-                    _dirichlet = np.random.dirichlet(
-                        [self.dir_alpha] * sum(legal_moves))
-                    dirichlet = np.zeros(7)
-                    ind = 0
-                    for i, v in enumerate(legal_moves):
-                        if v:
-                            dirichlet[i] = _dirichlet[ind]
-                            ind += 1
-                    leaf.expand((prior + dirichlet) * 0.5, look_position)
-            else:
-                for (leaf, look_position), prior in zip(leafs, batch_priors):
-                    # we could have 2 or more searches on one leaf
-                    if not leaf.children and not leaf.terminal:
-                        leaf.expand(prior, look_position)
+            for (leaf, look_position), prior in zip(leafs, batch_priors):
+                # we could have 2 or more searches on one leaf
+                if not leaf.children and not leaf.terminal:
+                    leaf.expand(prior, look_position)
             # backprop
             for (leaf, _), ev in zip(leafs, evaluations):
                 leaf.backprop(-ev)
