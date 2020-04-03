@@ -368,13 +368,15 @@ class MCTS:
             ind = search_probs.index(max(search_probs))
             return ind
         # stochastic = selfplay game
-        visits = [n.N for n in self.top_node.children]
+        # apply the dirichlet noise at move selection
+        dirichlet = np.random.dirichlet([self.dir_alpha] * len(search_probs))
+        noisy_probs = np.array(search_probs) + dirichlet
         # normally we would
         # let v = a vector of visits
         # v ^ (1 / temp)
         # but due to overflow problems, we rearrange
         # v ^ (1 / temp) = exp(log(v ^ (1 / temp))) = exp(log(v) / temp)
-        new_probs = softmax(np.log(np.array(visits) + 1e-10) / temp)
+        new_probs = softmax(np.log(noisy_probs + 1e-10) / temp)
         return np.random.choice(self.top_node.children, 1, p=new_probs)[0].move
 
     def get_pv(self) -> List[MCTSNode]:
