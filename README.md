@@ -23,5 +23,7 @@ it later though...
 
 - `training_pipeline.py` will not use `selfplay_v2.py` by default. At least
 not until I make finishing touches to the `C4UCT` binary. I'm no big C++ dev
-so doing this is half messing around and half torture.
+so doing this is half messing around and half torture. You can make it use
+`selfplay_v2.py` by changing line 15 `from selfplay import do_selfplay` to
+import from `selfplay_v2`. Be aware of the issues I mentioned above though.
 - If you have something to add, cough it up.
