@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include <iostream>
 #include "MCTSNode.h"
 #include "NodeHashtable.h"
@@ -14,7 +13,7 @@ MCTSNode::MCTSNode(bool top)
 }
 
 MCTSNode::MCTSNode(MCTSNode * pa, int m, float p, bool t, int ts, size_t* id, int depth)
-    : parent(pa), move(m), P(p), N(0), W(0), terminal(t), terminal_score(ts), active(true),
+    : parent(pa), move(m), P(p), N(0), W(0.0f), terminal(t), terminal_score((float)ts), active(true),
     depth(depth)
 {
     // depth is the depth of the game at which the move m was played (lowest value 0)
@@ -30,6 +29,14 @@ MCTSNode::MCTSNode(MCTSNode * pa, int m, float p, bool t, int ts, size_t* id, in
 void MCTSNode::Expand(C4Game & state, float * priors, NodeHashtable& nht)
 {
     bool* legal = state.LegalMoves();
+    float legalsum = 0;
+    for (int i = 0; i < 7; i++)
+    {
+        if (legal[i])
+        {
+            legalsum += priors[i];
+        }
+    }
     for (int i = 0; i < 7; i++)
     {
         if (legal[i])
@@ -37,7 +44,7 @@ void MCTSNode::Expand(C4Game & state, float * priors, NodeHashtable& nht)
             // check terminal
             state.PlayMove(i);
             float state_res = (float)state.GameOver();
-            children[i] = nht.CreateNode(this, i, priors[i], state_res > -1, state_res, this->identifier,
+            children[i] = nht.CreateNode(this, i, priors[i] / legalsum, state_res > -1, state_res, this->identifier,
                 this->depth + 1);
             state.UndoMove();
         }

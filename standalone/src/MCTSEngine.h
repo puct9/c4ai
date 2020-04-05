@@ -1,4 +1,6 @@
-#pragma once
+#ifndef C4UCT_MCTS_ENGINE_H
+#define C4UCT_MCTS_ENGINE_H
+
 #include "C4Game.h"
 #include "Model.h"
 #include "MCTSNode.h"
@@ -33,3 +35,4 @@ public:
     ~MCTSEngine();
 };
 
+#endif

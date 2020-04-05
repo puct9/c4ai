@@ -1,4 +1,6 @@
-#pragma once
+#ifndef C4UCT_C4_GAME_H
+#define C4UCT_C4_GAME_H
+
 #include <string>
 
 /*
@@ -48,3 +50,4 @@ public:
     ~C4Game();
 };
 
+#endif

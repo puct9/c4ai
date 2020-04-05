@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "ModelManager.h"
 #include "Model.h"
 

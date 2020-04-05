@@ -1,18 +1,21 @@
-#include "stdafx.h"
 #include <iostream>
 #include <string>
 #include <sstream>
+#include "gsl/gsl_rng.h"
 #include "AnalysisMode.h"
 #include "MCTSEngine.h"
 #include "MCTSNode.h"
 #include "Model.h"
 #include "ModelManager.h"
+#include "TrainUtils.h"
 
 
-void Analysismode()
+int AnalysisMode()
 {
     ModelManager model_manager;
     std::cout.flush();
+
+    gsl_rng* rng = gsl_rng_alloc(gsl_rng_mt19937);
 
     Model* model = model_manager.CreateModel(L"Models/save_2071.onnx");
     C4Game game;
@@ -21,7 +24,7 @@ void Analysismode()
 
     // input loop
     std::string user_in;
-    int user_value;
+    unsigned long user_value;
     for (;;)
     {
         std::getline(std::cin, user_in);
@@ -33,15 +36,13 @@ void Analysismode()
             std::stringstream(number) >> user_value;
             if (game.LegalMoves()[user_value])
                 game.PlayMove(user_value);
-            continue;
         }
         if (user_in == "d")
         {
             game.Show();
-            continue;
         }
         if (user_in == "game")
-            break;
+            return 2;  // enter GameMode
         if (user_in == "isready")
             std::cout << "readyok" << std::endl;
         if (user_in.rfind("getbest n ", 0) == 0)
@@ -65,5 +66,10 @@ void Analysismode()
             std::string posstr = user_in.substr(13);
             game = C4Game(posstr);
         }
+        if (user_in == "ssp")
+            return 1;  // enter SSPMode
+        if (user_in == "exit")
+            return -1;
     }
+    return -1;
 }

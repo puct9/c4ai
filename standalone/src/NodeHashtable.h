@@ -1,4 +1,6 @@
-#pragma once
+#ifndef C4UCT_NODE_HASHTABLE_H
+#define C4UCT_NODE_HASHTABLE_H
+
 #include <vector>
 #include "MCTSNode.h"
 
@@ -30,3 +32,4 @@ public:
     ~NodeHashtable();
 };
 
+#endif

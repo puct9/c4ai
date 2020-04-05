@@ -1,4 +1,6 @@
-#pragma once
+#ifndef C4UCT_MODEL_MANAGER_H
+#define C4UCT_MODEL_MANAGER_H
+
 #include <algorithm>
 #include <onnxruntime_cxx_api.h>
 #include "Model.h"
@@ -13,7 +15,7 @@ private:
     // all of this is done to make a very nice high level API and prevent
     // dangling references and pointers
     
-    std::vector <Ort::Env> envs;
+    std::vector<Ort::Env> envs;
     std::vector<Ort::SessionOptions> session_options;
     std::vector<Ort::Session> sessions;
     std::vector<Ort::Allocator> allocators;
@@ -37,3 +39,4 @@ public:
     ~ModelManager();
 };
 
+#endif

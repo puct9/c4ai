@@ -26,7 +26,7 @@ class C4Game:
         self.position_history = [np.zeros((7, 6))]
 
     @classmethod
-    def find_four(self, span: Iterable) -> bool:
+    def find_four(cls, span: Iterable) -> bool:
         """
         Parameters
         ----------

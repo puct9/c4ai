@@ -1,4 +1,5 @@
-#pragma once
+#ifndef C4UCT_MODEL_H
+#define C4UCT_MODEL_H
 
 #include <onnxruntime_cxx_api.h>
 #include "C4Game.h"
@@ -37,3 +38,4 @@ public:
     ~Model();
 };
 
+#endif

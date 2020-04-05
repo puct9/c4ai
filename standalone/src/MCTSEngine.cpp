@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "MCTSEngine.h"
 #include "MCTSNode.h"
 #include <iostream>
@@ -75,7 +74,7 @@ float * MCTSEngine::GetMoveProbs()
         MCTSNode* child = this->top_node->GetChild(i);
         if (child == nullptr)
             continue;
-        this->move_probs[i] = (float)child->GetVisits() / (float)this->playouts;
+        this->move_probs[i] = (float)child->GetVisits() / ((float)this->playouts - 1);
     }
 
     return this->move_probs;
