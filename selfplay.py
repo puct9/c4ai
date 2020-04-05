@@ -33,7 +33,7 @@ def do_selfplay(num: int, playouts: int,
     `Tuple[np.ndarray, int, int]`
     """
     for game_num in range(num):
-        print('Starting self-play game')
+        print(f'Starting self-play game {game_num + 1}/{num}')
         game = C4Game()
         searcher = MCTS(game, True, mdl, c_puct, playouts, dir_alpha=dir_alpha,
                         batch_size=mcts_batch_size)
