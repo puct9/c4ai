@@ -14,6 +14,10 @@ def convert_and_save(fin, fout):
     mdl = load_model(fin, custom_objects={
         'azero_loss': azero_loss
     })
+    save(mdl, fout)
+
+
+def save(mdl, fout):
     convert = onnxmltools.convert_keras(mdl)
     onnxmltools.save_model(convert, fout)
 
