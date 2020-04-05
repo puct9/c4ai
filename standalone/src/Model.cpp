@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include <onnxruntime_cxx_api.h>
 #include "Model.h"
 #include <iostream>

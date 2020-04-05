@@ -1,4 +1,6 @@
-#pragma once
+#ifndef C4UCT_MCTS_NODE_H
+#define C4UCT_MCTS_NODE_H
+
 #include "C4Game.h"
 #include <vector>
 #include <algorithm>
@@ -58,3 +60,4 @@ public:
     ~MCTSNode();
 };
 
+#endif

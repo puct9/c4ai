@@ -1,6 +1,6 @@
-#include "stdafx.h"
 #include <iostream>
 #include <sstream>
+#include <cctype>
 #include "C4Game.h"
 
 
@@ -317,11 +317,11 @@ void C4Game::WritePositionToArray(float * arr)
         int new_ind = (new_r * 6 + new_c) * 3;
         // CHANNEL ORDER: TURN | X | O
         // TURN
-        arr[new_ind] = move_n % 2 == 0 ? 1 : 0;
+        arr[new_ind] = move_n % 2 == 0 ? 1.0f : 0.0f;
         // X
-        arr[new_ind + 1] = BITSH[i] & pcs_x ? 1 : 0;
+        arr[new_ind + 1] = BITSH[i] & pcs_x ? 1.0f : 0.0f;
         // O
-        arr[new_ind + 2] = BITSH[i] & pcs_o ? 1 : 0;
+        arr[new_ind + 2] = BITSH[i] & pcs_o ? 1.0f : 0.0f;
     }
 }
 

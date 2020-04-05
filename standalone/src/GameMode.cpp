@@ -1,13 +1,11 @@
-#include "stdafx.h"
 #include <iostream>
 #include <string>
 #include <sstream>
 #include "GameMode.h"
-#include "MCTSNode.h"
 #include "MCTSEngine.h"
 
 
-void Gamemode()
+int GameMode()
 {
     ModelManager model_manager;
 
@@ -54,6 +52,7 @@ void Gamemode()
 
     std::cout << "Game over!" << std::endl;
     game.Show();
+    return -1;
 }
 
 

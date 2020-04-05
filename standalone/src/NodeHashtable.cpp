@@ -1,4 +1,3 @@
-#include "stdafx.h"
 #include "NodeHashtable.h"
 #include "MCTSNode.h"
 #include <iostream>
