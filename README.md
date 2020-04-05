@@ -18,3 +18,10 @@ I'm not interested in fixing it at the moment.
 - Specifying training arguments in `do_selfplay` of `selfplay_v2.py` doesn't
 change anything. I'm too lazy to do do that right now. Will definitely work on
 it later though...
+
+## By the way
+
+- `training_pipeline.py` will not use `selfplay_v2.py` by default. At least
+not until I make finishing touches to the `C4UCT` binary. I'm no big C++ dev
+so doing this is half messing around and half torture.
+- If you have something to add, cough it up.
