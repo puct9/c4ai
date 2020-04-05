@@ -19,7 +19,8 @@ THREADS = 6
 
 def do_selfplay(num: int, playouts: int,
                 c_puct: int, mdl: Model,
-                dir_alpha: float, temp_cutoff: int) -> tuple:
+                dir_alpha: float, temp_cutoff: int,
+                *args) -> tuple:
     """
     Do and save to a file some selfplay games
     Parameters
