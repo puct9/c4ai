@@ -22,9 +22,9 @@ int GameMode()
     std::cout << "We will need about " << playouts * 8 * sizeof(MCTSNode) / (float)(1024 * 1024)
         << " MB of RAM." << std::endl;
 
-    std::cout << "Model (default save_2071.onnx): ";
+    std::cout << "Model (default save_10k.onnx): ";
     std::getline(std::cin, user_in);
-    user_in = user_in.size() == 0 ? "save_2071.onnx" : user_in;
+    user_in = user_in.size() == 0 ? "save_10k.onnx" : user_in;
     std::string str_mdl_name = "Models/" + user_in;
     std::cout << "Using model: " << str_mdl_name << std::endl;
     std::wstring wstr_mdl_name = std::wstring(str_mdl_name.begin(), str_mdl_name.end());

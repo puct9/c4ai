@@ -17,7 +17,7 @@ int AnalysisMode()
 
     gsl_rng* rng = gsl_rng_alloc(gsl_rng_mt19937);
 
-    Model* model = model_manager.CreateModel(L"Models/save_2071.onnx");
+    Model* model = model_manager.CreateModel(L"Models/save_10k.onnx");
     C4Game game;
 
     std::cout << "Welcome to analysis mode." << std::endl;
