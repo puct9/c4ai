@@ -24,7 +24,7 @@ public:
     MCTSEngine(C4Game position, Model* network, float c_puct, size_t playouts);
     MCTSEngine(C4Game position, Model* network, float c_puct, size_t playouts, size_t memory);
 
-    void DoPlayouts();
+    void DoPlayouts(bool verbose = false);
     void SetHashSizeByMemory(size_t megabytes);
     void SetHashSizeByLength(size_t length);
     float* GetMoveProbs();

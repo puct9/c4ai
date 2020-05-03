@@ -27,8 +27,13 @@ int GameMode()
     user_in = user_in.size() == 0 ? "save_10k.onnx" : user_in;
     std::string str_mdl_name = "Models/" + user_in;
     std::cout << "Using model: " << str_mdl_name << std::endl;
+
+#ifdef _WIN32
     std::wstring wstr_mdl_name = std::wstring(str_mdl_name.begin(), str_mdl_name.end());
-    const wchar_t* mdl_name = wstr_mdl_name.c_str();
+    const ORTCHAR_T* mdl_name = wstr_mdl_name.c_str();
+#else
+    const ORTCHAR_T* mdl_name = str_mdl_name.c_str();
+#endif
     std::cout.flush();
 
     Model* MODEL = model_manager.CreateModel(mdl_name);

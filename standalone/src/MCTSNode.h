@@ -55,7 +55,7 @@ public:
     size_t* GetId() { return this->identifier; };
     MCTSNode* GetChild(int n) { return this->children[n]; };
     float GetP() { return this->P; };
-    float GetQ() { return this->W / this->N; };
+    float GetQ() { return this->N > 0 ? this->W / this->N : -1.0f; };
 
     ~MCTSNode();
 };
