@@ -11,8 +11,8 @@ private:
     Ort::Env* env;
     Ort::SessionOptions* session_options;
     Ort::Session* session;
-    Ort::Allocator* allocator;
-    Ort::AllocatorInfo* allocator_info;
+    Ort::AllocatorWithDefaultOptions* allocator;
+    Ort::MemoryInfo* allocator_info;
 
     Ort::Value* input_tensor;
 
@@ -27,8 +27,8 @@ private:
 public:
 
     Model(Ort::Env* env, Ort::SessionOptions* session_options, Ort::Session* session,
-        Ort::Allocator* allocator, std::array<const char*, 1> input_node_names,
-        std::array<const char*, 2> output_node_names, Ort::AllocatorInfo* allocator_info,
+        Ort::AllocatorWithDefaultOptions* allocator, std::array<const char*, 1> input_node_names,
+        std::array<const char*, 2> output_node_names, Ort::MemoryInfo* allocator_info,
         std::array<float, 126>* input_vector, float* input_data, Ort::Value* input_tensor);
 
     float** Run();

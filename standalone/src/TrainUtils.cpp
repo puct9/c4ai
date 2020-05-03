@@ -1,4 +1,6 @@
 #include <algorithm>
+#include <cfloat>
+#include <math.h>
 #include <iostream>
 #include <sstream>
 #include "gsl/gsl_rng.h"
@@ -16,7 +18,11 @@ int SSPMode()
 
     gsl_rng* rng = gsl_rng_alloc(gsl_rng_mt19937);
 
+#ifdef _WIN32
     Model* model = model_manager.CreateModel(L"Models/temp.onnx");
+#else
+    Model* model = model_manager.CreateModel("Models/temp.onnx");
+#endif
     C4Game game;
 
     std::cout << "Welcome to selfplay mode." << std::endl;
@@ -41,7 +47,7 @@ int SSPMode()
             std::cout << "seed set to " << user_value << std::endl;
         }
         if (user_in == "sspgo")
-            StochasticSelfPlay(model, 3, 1.4, 12, 800, rng);
+            StochasticSelfPlay(model, 3, 1.4f, 12, 800, rng);
         if (user_in == "exit")
             return -1;
     }

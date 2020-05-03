@@ -6,10 +6,6 @@ from keras.optimizers import SGD
 from keras.regularizers import l2
 
 
-def azero_loss(y_true, y_pred):
-    return K.mean(-y_true * K.log(y_pred))
-
-
 def create_model(planes: int) -> Model:
     """
     Parameters
@@ -57,7 +53,7 @@ def create_model(planes: int) -> Model:
     deep_neural_network = Model(inputs=[board_in],
                                 outputs=[value_head, policy_head])
     deep_neural_network.compile(SGD(momentum=0.9),
-                                loss=['mse', azero_loss]
+                                loss=['mse', 'cagegorical_crossentropy']
                                 )
     return deep_neural_network
 

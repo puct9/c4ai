@@ -18,8 +18,8 @@ private:
     std::vector<Ort::Env> envs;
     std::vector<Ort::SessionOptions> session_options;
     std::vector<Ort::Session> sessions;
-    std::vector<Ort::Allocator> allocators;
-    std::vector<Ort::AllocatorInfo> allocator_infos;
+    std::vector<Ort::AllocatorWithDefaultOptions> allocators;
+    std::vector<Ort::MemoryInfo> allocator_infos;
 
     std::vector<Ort::Value> input_tensors;
 
@@ -34,7 +34,7 @@ private:
 public:
     ModelManager();
 
-    Model* CreateModel(const wchar_t * model_path);
+    Model* CreateModel(const ORTCHAR_T * model_path);
 
     ~ModelManager();
 };

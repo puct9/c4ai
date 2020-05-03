@@ -17,7 +17,12 @@ int AnalysisMode()
 
     gsl_rng* rng = gsl_rng_alloc(gsl_rng_mt19937);
 
+#ifdef _WIN32
     Model* model = model_manager.CreateModel(L"Models/save_10k.onnx");
+#else
+    Model* model = model_manager.CreateModel("Models/save_10k.onnx");
+#endif
+
     C4Game game;
 
     std::cout << "Welcome to analysis mode." << std::endl;
@@ -55,9 +60,27 @@ int AnalysisMode()
             eng.DoPlayouts();
             auto pv = eng.GetPV();
             if (pv.size() == 0)
+            {
                 std::cout << "end of game" << std::endl;
+                continue;
+            }
             std::cout << eng.GetTopNode()->GetChild(eng.GetPV()[0])->GetQ()
                 << " " << eng.GetPV()[0] << std::endl;
+        }
+        if (user_in.rfind("go n ", 0) == 0)
+        {
+            std::string number = user_in.substr(5);
+            std::stringstream(number) >> user_value;
+            if (user_value < 10)
+                user_value = 10;
+            MCTSEngine eng = MCTSEngine(game, model, 3, user_value);
+            eng.DoPlayouts(true);
+            auto pv = eng.GetPV();
+            if (pv.size() == 0)
+            {
+                std::cout << "end of game" << std::endl;
+                continue;
+            }
         }
         if (user_in == "undo")
             game.UndoMove();

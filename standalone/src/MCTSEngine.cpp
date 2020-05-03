@@ -1,6 +1,6 @@
+#include <iostream>
 #include "MCTSEngine.h"
 #include "MCTSNode.h"
-#include <iostream>
 
 
 
@@ -26,8 +26,9 @@ MCTSEngine::MCTSEngine(C4Game position, Model * network, float c_puct, size_t pl
     this->playouts = playouts;
 }
 
-void MCTSEngine::DoPlayouts()
+void MCTSEngine::DoPlayouts(bool verbose)
 {
+    std::vector<int> prevpv;
     while (this->top_node->GetVisits() < this->playouts)
     {
         // find the appropriate leaf node
@@ -45,6 +46,44 @@ void MCTSEngine::DoPlayouts()
 
         leaf->Expand(look_position, predictions[1], this->nht);
         leaf->Backprop(-predictions[0][0]);
+
+        if (verbose && this->playouts % 50 == 0)
+        {
+            std::vector<int> currpv = this->GetPV();
+            bool changed = prevpv.size() != currpv.size();
+            if (!changed)
+            {
+                for (int i = 0; i < currpv.size(); i++)
+                {
+                    if (prevpv[i] != currpv[i])
+                    {
+                        changed = true;
+                        break;
+                    }
+                }
+            }
+            if (changed)
+            {
+                std::cout << "info pv ";
+                for (auto& move : currpv)
+                    std::cout << move << ' ';
+                std::cout << std::endl;
+                prevpv = currpv;
+            }
+        }
+    }
+
+    if (verbose)
+    {
+        for (int i = 0; i < 7; i++)
+        {
+            MCTSNode* child = top_node->GetChild(i);
+            if (child == nullptr)
+                continue;
+            std::cout << "[NODE] move " << i << " N " << child->GetVisits() <<
+                " P " << child->GetP() << " Q " << child->GetQ() << '\n';
+        }
+        std::cout << "endinfo" << std::endl;
     }
 }
 

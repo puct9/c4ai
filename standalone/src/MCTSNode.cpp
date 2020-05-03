@@ -1,4 +1,5 @@
 #include <iostream>
+#include <math.h>
 #include "MCTSNode.h"
 #include "NodeHashtable.h"
 
@@ -10,6 +11,10 @@ MCTSNode::MCTSNode(bool top)
 {
     this->identifier[0] = 0;
     this->identifier[1] = 0;
+#ifndef _WIN32
+    for (int i = 0; i < 7; i++)
+        this->children[i] = nullptr;
+#endif
 }
 
 MCTSNode::MCTSNode(MCTSNode * pa, int m, float p, bool t, int ts, size_t* id, int depth)
@@ -24,6 +29,10 @@ MCTSNode::MCTSNode(MCTSNode * pa, int m, float p, bool t, int ts, size_t* id, in
         this->identifier[0] += pow(7, depth) * m;
     else
         this->identifier[1] += pow(7, depth - 21) * m;
+#ifndef _WIN32
+    for (int i = 0; i < 7; i++)
+        this->children[i] = nullptr;
+#endif
 }
 
 void MCTSNode::Expand(C4Game & state, float * priors, NodeHashtable& nht)
@@ -90,7 +99,7 @@ float MCTSNode::Value(float c_puct)
 {
     if (terminal && terminal_score != 0)
         return 999;  // arbitrarily large, impossible value
-    float u = (log((parent->N + 19653) / 19652) + c_puct) * P * pow(parent->N, 0.5f) / (1 + N);
+    float u = (log((parent->N + 19653.0f) / 19652.0f) + c_puct) * P * pow(parent->N, 0.5f) / (1.0f + N);
     float q = N == 0 ? -1 : W / N;  // FPU -1 with 0 playouts
     return q + u;
 }

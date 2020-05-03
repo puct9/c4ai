@@ -6,21 +6,22 @@ ModelManager::ModelManager()
 {
 }
 
-Model * ModelManager::CreateModel(const wchar_t * model_path)
+Model * ModelManager::CreateModel(const ORTCHAR_T * model_path)
 {
     this->envs.push_back(Ort::Env(ORT_LOGGING_LEVEL_WARNING, "mdl"));
     Ort::Env* env = &this->envs[this->envs.size() - 1];
 
     this->session_options.push_back(Ort::SessionOptions());
     Ort::SessionOptions* session_options = &this->session_options[this->session_options.size() - 1];
-    session_options->SetThreadPoolSize(1);
-    session_options->SetGraphOptimizationLevel(2);
+    // commented out below line due to bad performance
+    // session_options->SetIntraOpNumThreads(1);
+    session_options->SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED);
 
     this->sessions.push_back(Ort::Session(*env, model_path, *session_options));
     Ort::Session* session = &this->sessions[this->sessions.size() - 1];
 
-    this->allocators.push_back(Ort::Allocator::CreateDefault());
-    Ort::Allocator* allocator = &this->allocators[this->allocators.size() - 1];
+    this->allocators.push_back(Ort::AllocatorWithDefaultOptions());
+    Ort::AllocatorWithDefaultOptions* allocator = &this->allocators[this->allocators.size() - 1];
 
     // get input information
     std::array<const char*, 1> input_node_names = { session->GetInputName(0, *allocator) };
@@ -35,8 +36,8 @@ Model * ModelManager::CreateModel(const wchar_t * model_path)
     this->output_node_names.push_back(output_node_names);
 
     // allocator
-    this->allocator_infos.push_back(Ort::AllocatorInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault));
-    Ort::AllocatorInfo* allocator_info = &this->allocator_infos[this->allocator_infos.size() - 1];
+    this->allocator_infos.push_back(Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault));
+    Ort::MemoryInfo* allocator_info = &this->allocator_infos[this->allocator_infos.size() - 1];
 
     // manage INPUT vector data and tensors
     this->input_vectors.push_back(std::array<float, 126>());

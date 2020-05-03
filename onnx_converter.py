@@ -7,13 +7,9 @@ import sys
 import onnxmltools
 from keras.models import load_model
 
-from dnn import azero_loss
-
 
 def convert_and_save(fin, fout):
-    mdl = load_model(fin, custom_objects={
-        'azero_loss': azero_loss
-    })
+    mdl = load_model(fin)
     save(mdl, fout)
 
 

@@ -262,8 +262,7 @@ class TrainingPipeline:
 
 def main() -> None:
     # model = dnn.create_model(3)
-    model = load_model('./testXVIa/save_803.ntwk',
-                       custom_objects={'azero_loss': dnn.azero_loss})
+    model = load_model('./testXVIa/save_803.ntwk')
     path = './testXVIa'
     buf = pickle.load(open('./testXVIa/data_buffer.dbuf', 'rb'))
     # buf = None
