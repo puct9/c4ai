@@ -3,7 +3,6 @@ from keras.models import Model, load_model
 from c4game import C4Game
 # from mcts import MCTS
 from mcts_v2 import MCTS
-from dnn import azero_loss
 
 
 def vs_ai(mdl: Model, go_first: bool = True) -> None:
@@ -49,6 +48,5 @@ def vs_ai(mdl: Model, go_first: bool = True) -> None:
 
 
 if __name__ == '__main__':
-    vs_ai(load_model('./testXVI/save_2071.ntwk',
-                     custom_objects={'azero_loss': azero_loss}),
+    vs_ai(load_model('./testXVI/save_2071.ntwk'),
           True)

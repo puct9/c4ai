@@ -14,15 +14,13 @@ from keras.models import Model, load_model
 from c4game import C4Game
 # from mcts import MCTS
 from mcts_v2 import MCTS
-from dnn import azero_loss
 
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 # network
 MODEL_FILE = './testXVI/save_2071.ntwk'
-MODEL = load_model(MODEL_FILE,
-                   custom_objects={'azero_loss': azero_loss})
+MODEL = load_model(MODEL_FILE)
 POSITION = C4Game()
 
 
