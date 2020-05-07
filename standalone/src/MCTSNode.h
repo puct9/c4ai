@@ -42,9 +42,11 @@ public:
     float Value(float c_puct);
     MCTSNode * ToLeaf(float c_puct, C4Game& position);
     void SetInactive();
+    void SetOnlyThisNodeAsInactive() { this->active = false; };
     void SetParent(MCTSNode* new_parent);
     void ShowDetailedInfo();
     void WriteInfoToPV(std::vector<int>& pv);
+    void SetAsTopNode() { this->parent = nullptr; };
 
     bool IsActive() { return this->active; };
     bool IsTerminal() { return this->terminal; };

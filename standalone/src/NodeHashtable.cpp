@@ -141,23 +141,26 @@ void NodeHashtable::Rebuild(size_t length)
 {
     std::vector<MCTSNode> new_ht = std::vector<MCTSNode>(length);
     int min_depth = 69420;  // impossibly high depth
-    size_t min_depth_i = 0;
+    size_t min_depth_node_id[2];
     for (size_t i = 0; i < this->storage.size(); i++)
     {
         auto& elem = this->storage[i];
         if (elem.IsActive())
         {
-            NodeHashtable::AddNode(this->storage[i], new_ht);
+            auto new_node = NodeHashtable::AddNode(this->storage[i], new_ht);
             if (elem.GetDepth() < min_depth)
             {
                 min_depth = elem.GetDepth();
-                min_depth_i = i;
+                auto eid = elem.GetId();
+                min_depth_node_id[0] = eid[0]; min_depth_node_id[1] = eid[1];
             }
         }
     }
     this->storage = new_ht;
-    std::cout << min_depth_i << std::endl;
-    this->storage[min_depth_i].RefreshChildrenPointers(*this);
+    // there is a bug which stops the below from working for some reason!
+    auto top_node = this->GetNodeById(min_depth_node_id, min_depth);
+    if (top_node->IsActive())
+        top_node->RefreshChildrenPointers(*this);
 }
 
 size_t NodeHashtable::ObjectGetDistance(size_t * id, int depth)

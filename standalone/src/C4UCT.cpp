@@ -3,6 +3,7 @@
 #include "C4Game.h"
 #include "GameMode.h"
 #include "TrainUtils.h"
+#include "DebugMode.h"
 
 
 int main()
@@ -26,6 +27,9 @@ int main()
             break;
         case 2:
             runcode = GameMode();
+            break;
+        case 3:
+            runcode = DBGMode();
             break;
         default:
             break;
