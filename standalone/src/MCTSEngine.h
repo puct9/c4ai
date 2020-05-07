@@ -29,7 +29,10 @@ public:
     void SetHashSizeByLength(size_t length);
     float* GetMoveProbs();
     std::vector<int> GetPV();
+    void RecycleTree(int move);
 
+    void PeekHT() { this->nht.Show(); };
+    size_t PeekHTCapacity() { return this->nht.CountActive(); };
     MCTSNode* GetTopNode() { return this->top_node; };
 
     ~MCTSEngine();

@@ -6,8 +6,8 @@
 
 MCTSEngine::MCTSEngine(C4Game position, Model * network, float c_puct, size_t playouts)
 {
-    this->nht = NodeHashtable(playouts * 8);  // make the thing 8x as many playouts
-
+    // make the thing 8x as many playouts
+    this->nht = NodeHashtable(playouts * 8 + 1);  // adding 1 makes 4head into 5head
     this->top_node = this->nht.CreateNode(true);
     this->base_position = position;
     this->network = network;
@@ -124,6 +124,25 @@ std::vector<int> MCTSEngine::GetPV()
     std::vector<int> pv;
     this->top_node->WriteInfoToPV(pv);
     return pv;
+}
+
+void MCTSEngine::RecycleTree(int move)
+{
+    // set the others to inactive
+    for (int i = 0; i < 7; i++)
+    {
+        if (i != move && top_node->GetChild(i) != nullptr)
+            top_node->GetChild(i)->SetInactive();
+    }
+    size_t new_top_node_id[2];  // the old object holding this is going to die so we copy
+    int new_top_node_depth = top_node->GetChild(move)->GetDepth();
+    auto new_top_node_id_ref = top_node->GetChild(move)->GetId();
+    new_top_node_id[0] = new_top_node_id_ref[0]; new_top_node_id[1] = new_top_node_id_ref[1];
+    top_node->SetOnlyThisNodeAsInactive();
+    this->nht.Rebuild(this->nht.GetLength());
+    base_position.PlayMove(move);
+    this->top_node = this->nht.GetNodeById(new_top_node_id, new_top_node_depth);
+    this->top_node->SetAsTopNode();
 }
 
 MCTSEngine::~MCTSEngine()

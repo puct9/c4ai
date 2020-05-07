@@ -25,10 +25,10 @@ MCTSNode::MCTSNode(MCTSNode * pa, int m, float p, bool t, int ts, size_t* id, in
     this->identifier[0] = id[0];
     this->identifier[1] = id[1];
     // depth increment
-    if (depth < 21)
-        this->identifier[0] += pow(7, depth) * m;
+    if (depth < 22)
+        this->identifier[0] |= ((size_t)m + (size_t)1) << (3 * (depth - 1));
     else
-        this->identifier[1] += pow(7, depth - 21) * m;
+        this->identifier[1] |= ((size_t)m + (size_t)1) << (3 * (depth - 22));
 #ifndef _WIN32
     for (int i = 0; i < 7; i++)
         this->children[i] = nullptr;
@@ -73,15 +73,17 @@ void MCTSNode::RefreshChildrenPointers(NodeHashtable & nht)
     // update the array
     for (int i = 0; i < 7; i++)
     {
+        if (this->children[i] == nullptr)
+            continue;
         // compute the next id
         size_t predicted_id[2];
         predicted_id[0] = this->identifier[0];
         predicted_id[1] = this->identifier[1];
         // depth increment
-        if (this->depth + 1 < 21)
-            predicted_id[0] += pow(7, this->depth + 1) * i;
+        if (this->depth + 1 < 22)
+            predicted_id[0] |= ((size_t)i + (size_t)1) << (3 * (this->depth));
         else
-            predicted_id[1] += pow(7, this->depth + 1 - 21) * i;
+            predicted_id[1] |= ((size_t)i + (size_t)1) << (3 * (this->depth - 21));
 
         this->children[i] = nht.GetNodeById(predicted_id, this->depth + 1);
     }
@@ -130,9 +132,8 @@ void MCTSNode::SetInactive()
     this->active = false;
     for (auto& child : this->children)
     {
-        if (child == nullptr)
-            continue;
-        child->SetInactive();
+        if (child != nullptr)
+            child->SetInactive();
     }
 }
 

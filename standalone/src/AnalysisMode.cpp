@@ -18,9 +18,9 @@ int AnalysisMode()
     gsl_rng* rng = gsl_rng_alloc(gsl_rng_mt19937);
 
 #ifdef _WIN32
-    Model* model = model_manager.CreateModel(L"Models/save_10k.onnx");
+    Model* model = model_manager.CreateModel(L"Models/default.onnx");
 #else
-    Model* model = model_manager.CreateModel("Models/save_10k.onnx");
+    Model* model = model_manager.CreateModel("Models/default.onnx");
 #endif
 
     C4Game game;
@@ -46,8 +46,6 @@ int AnalysisMode()
         {
             game.Show();
         }
-        if (user_in == "game")
-            return 2;  // enter GameMode
         if (user_in == "isready")
             std::cout << "readyok" << std::endl;
         if (user_in.rfind("getbest n ", 0) == 0)
@@ -91,6 +89,10 @@ int AnalysisMode()
         }
         if (user_in == "ssp")
             return 1;  // enter SSPMode
+        if (user_in == "game")
+            return 2;  // enter GameMode
+        if (user_in == "dbg")
+            return 3;
         if (user_in == "exit")
             return -1;
     }

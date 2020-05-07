@@ -62,10 +62,10 @@ void StochasticSelfPlay(Model* network, float c_puct, float dir_alpha, int temp_
     std::fill_n(alpha, 7, dir_alpha);
 
     C4Game board;
+    MCTSEngine eng(board, network, c_puct, playouts);
     int move_n = 0;
     while (board.GameOver() == -1)
     {
-        MCTSEngine eng(board, network, c_puct, playouts);
         eng.DoPlayouts();
         float* probs = eng.GetMoveProbs();
 
@@ -127,6 +127,7 @@ void StochasticSelfPlay(Model* network, float c_puct, float dir_alpha, int temp_
             if (accumulator > choice_random)
             {
                 board.PlayMove(i);
+                eng.RecycleTree(i);
                 move_n++;
                 std::cout << '~' << i << std::endl;
                 break;
