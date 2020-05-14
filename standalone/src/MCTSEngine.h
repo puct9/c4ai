@@ -1,5 +1,7 @@
 #ifndef C4UCT_MCTS_ENGINE_H
 #define C4UCT_MCTS_ENGINE_H
+constexpr auto C4UCT_MCTS_ENGINE_INFO_VOMIT = false;
+
 
 #include "C4Game.h"
 #include "Model.h"

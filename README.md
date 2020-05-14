@@ -23,5 +23,6 @@ it later though...
 
 - `training_pipeline.py` will not use `selfplay_v2.py` by default. However,
 I have managed to (and so can you) build the binary on Linux. Use
-onnxruntime version 1.2.0 and recent version of GSL.
+onnxruntime version 1.2.0 (see [here](https://github.com/microsoft/onnxruntime))
+and recent version of GSL.
 - If you have something to add, cough it up.

@@ -47,7 +47,7 @@ void MCTSEngine::DoPlayouts(bool verbose)
         leaf->Expand(look_position, predictions[1], this->nht);
         leaf->Backprop(-predictions[0][0]);
 
-        if (verbose && this->playouts % 50 == 0)
+        if (verbose && this->top_node->GetVisits() % 50 == 0)
         {
             std::vector<int> currpv = this->GetPV();
             bool changed = prevpv.size() != currpv.size();
@@ -69,6 +69,20 @@ void MCTSEngine::DoPlayouts(bool verbose)
                     std::cout << move << ' ';
                 std::cout << std::endl;
                 prevpv = currpv;
+            }
+            // for fun
+            if (C4UCT_MCTS_ENGINE_INFO_VOMIT)
+            {
+                size_t visitarr[7];
+                float valuearr[7];
+                for (int i = 0; i < 7; i++)
+                {
+                    auto child = top_node->GetChild(i);
+                    visitarr[i] = child == nullptr ? 0 : child->GetVisits();
+                    valuearr[i] = child == nullptr ? -1.0f : child->Value(3.0f);
+                }
+                printf("visits %llu %llu %llu %llu %llu %llu %llu\n", visitarr[0], visitarr[1], visitarr[2], visitarr[3], visitarr[4], visitarr[5], visitarr[6]);
+                printf("values %f %f %f %f %f %f %f\n", valuearr[0], valuearr[1], valuearr[2], valuearr[3], valuearr[4], valuearr[5], valuearr[6]);
             }
         }
     }
