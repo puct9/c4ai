@@ -242,7 +242,7 @@ class MCTS:
         stochastic: `bool`
             Set to true if this is a selfplay training game
         network: `keras.models.Model`
-            The neural netowrk
+            The neural network
         c_puct: `float`
             Constant controlling exploration
         playouts: `int`
