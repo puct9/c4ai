@@ -4,7 +4,7 @@
 
 
 
-MCTSEngine::MCTSEngine(C4Game position, Model * network, float c_puct, size_t playouts)
+MCTSEngine::MCTSEngine(C4Game position, Model * network, float c_puct, std::uint64_t playouts)
 {
     // make the thing 8x as many playouts
     this->nht = NodeHashtable(playouts * 8 + 1);  // adding 1 makes 4head into 5head
@@ -15,7 +15,7 @@ MCTSEngine::MCTSEngine(C4Game position, Model * network, float c_puct, size_t pl
     this->playouts = playouts;
 }
 
-MCTSEngine::MCTSEngine(C4Game position, Model * network, float c_puct, size_t playouts, size_t memory)
+MCTSEngine::MCTSEngine(C4Game position, Model * network, float c_puct, std::uint64_t playouts, std::uint64_t memory)
 {
     this->nht = NodeHashtable(memory * 1024 * 1024 / sizeof(MCTSNode));
 
@@ -73,7 +73,7 @@ void MCTSEngine::DoPlayouts(bool verbose)
             // for fun
             if (C4UCT_MCTS_ENGINE_INFO_VOMIT)
             {
-                size_t visitarr[7];
+                std::uint64_t visitarr[7];
                 float valuearr[7];
                 for (int i = 0; i < 7; i++)
                 {
@@ -81,7 +81,11 @@ void MCTSEngine::DoPlayouts(bool verbose)
                     visitarr[i] = child == nullptr ? 0 : child->GetVisits();
                     valuearr[i] = child == nullptr ? -1.0f : child->Value(3.0f);
                 }
+#ifdef _WIN32
                 printf("visits %llu %llu %llu %llu %llu %llu %llu\n", visitarr[0], visitarr[1], visitarr[2], visitarr[3], visitarr[4], visitarr[5], visitarr[6]);
+#else
+                printf("visits %lu %lu %lu %lu %lu %lu %lu\n", visitarr[0], visitarr[1], visitarr[2], visitarr[3], visitarr[4], visitarr[5], visitarr[6]);
+#endif
                 printf("values %f %f %f %f %f %f %f\n", valuearr[0], valuearr[1], valuearr[2], valuearr[3], valuearr[4], valuearr[5], valuearr[6]);
             }
         }
@@ -101,15 +105,15 @@ void MCTSEngine::DoPlayouts(bool verbose)
     }
 }
 
-void MCTSEngine::SetHashSizeByMemory(size_t megabytes)
+void MCTSEngine::SetHashSizeByMemory(std::uint64_t megabytes)
 {
     this->SetHashSizeByLength(megabytes * 1024 * 1024 / sizeof(MCTSNode));
 }
 
-void MCTSEngine::SetHashSizeByLength(size_t length)
+void MCTSEngine::SetHashSizeByLength(std::uint64_t length)
 {
-    size_t* top_id_ = this->top_node->GetId();
-    size_t top_id[2];  // copy
+    std::uint64_t* top_id_ = this->top_node->GetId();
+    std::uint64_t top_id[2];  // copy
     top_id[0] = top_id_[0];
     top_id[1] = top_id_[1];
     int top_depth = this->top_node->GetDepth();
@@ -148,7 +152,7 @@ void MCTSEngine::RecycleTree(int move)
         if (i != move && top_node->GetChild(i) != nullptr)
             top_node->GetChild(i)->SetInactive();
     }
-    size_t new_top_node_id[2];  // the old object holding this is going to die so we copy
+    std::uint64_t new_top_node_id[2];  // the old object holding this is going to die so we copy
     int new_top_node_depth = top_node->GetChild(move)->GetDepth();
     auto new_top_node_id_ref = top_node->GetChild(move)->GetId();
     new_top_node_id[0] = new_top_node_id_ref[0]; new_top_node_id[1] = new_top_node_id_ref[1];

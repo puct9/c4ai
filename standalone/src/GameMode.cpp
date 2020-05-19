@@ -10,7 +10,7 @@ int GameMode()
     ModelManager model_manager;
 
     std::string user_in;
-    size_t playouts;
+    std::uint64_t playouts;
     std::cout << "Search playouts (default 5000): ";
     std::getline(std::cin, user_in);
     user_in = user_in.size() == 0 ? "5000" : user_in;
@@ -61,7 +61,7 @@ int GameMode()
 }
 
 
-void human_controller(C4Game& state, Model* mdl, size_t playouts)
+void human_controller(C4Game& state, Model* mdl, std::uint64_t playouts)
 {
     int move_inp;
     bool* legal = state.LegalMoves();
@@ -85,7 +85,7 @@ void human_controller(C4Game& state, Model* mdl, size_t playouts)
 }
 
 
-void computer_controller(C4Game& state, Model* mdl, size_t playouts)
+void computer_controller(C4Game& state, Model* mdl, std::uint64_t playouts)
 {
     // 30000N
     MCTSEngine eng = MCTSEngine(C4Game(state), mdl, 3, playouts);

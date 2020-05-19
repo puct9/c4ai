@@ -9,7 +9,7 @@
 
 int GameMode();
 
-void human_controller(C4Game& state, Model* mdl, size_t playouts);
-void computer_controller(C4Game& state, Model* mdl, size_t playouts);
+void human_controller(C4Game& state, Model* mdl, std::uint64_t playouts);
+void computer_controller(C4Game& state, Model* mdl, std::uint64_t playouts);
 
 #endif

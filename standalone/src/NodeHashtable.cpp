@@ -4,7 +4,7 @@
 
 
 
-NodeHashtable::NodeHashtable(size_t length)
+NodeHashtable::NodeHashtable(std::uint64_t length)
 {
     /*
     std::cout << "Creating hashtable with size: " << length << std::endl;
@@ -16,9 +16,9 @@ NodeHashtable::NodeHashtable(size_t length)
 
 MCTSNode * NodeHashtable::AddNode(MCTSNode & node)
 {
-    size_t* id = node.GetId();
-    size_t pos = (id[0] + id[1]) % this->storage.size();
-    for (size_t offset = 0; offset < this->storage.size(); offset++)
+    std::uint64_t* id = node.GetId();
+    std::uint64_t pos = (id[0] + id[1]) % this->storage.size();
+    for (std::uint64_t offset = 0; offset < this->storage.size(); offset++)
     {
         if (!this->storage[(pos + offset) % this->storage.size()].IsActive())
         {
@@ -33,9 +33,9 @@ MCTSNode * NodeHashtable::AddNode(MCTSNode & node)
 
 MCTSNode * NodeHashtable::AddNode(MCTSNode & node, std::vector<MCTSNode>& arr)
 {
-    size_t* id = node.GetId();
-    size_t pos = (id[0] + id[1]) % arr.size();
-    for (size_t offset = 0; offset < arr.size(); offset++)
+    std::uint64_t* id = node.GetId();
+    std::uint64_t pos = (id[0] + id[1]) % arr.size();
+    for (std::uint64_t offset = 0; offset < arr.size(); offset++)
     {
         if (!arr[(pos + offset) % arr.size()].IsActive())
         {
@@ -53,10 +53,10 @@ MCTSNode * NodeHashtable::CreateNode(bool top)
     // "hash"
     // because math, it won't overflow, and even if it does, it's not a big deal...
     MCTSNode new_node = MCTSNode(top);
-    size_t* new_id = new_node.GetId();
-    size_t pos = (new_id[0] + new_id[1]) % this->storage.size();
+    std::uint64_t* new_id = new_node.GetId();
+    std::uint64_t pos = (new_id[0] + new_id[1]) % this->storage.size();
     // get pos
-    for (size_t offset = 0; offset < this->storage.size(); offset++)
+    for (std::uint64_t offset = 0; offset < this->storage.size(); offset++)
     {
         if (!this->storage[(pos + offset) % this->storage.size()].IsActive())
         {
@@ -73,16 +73,16 @@ MCTSNode * NodeHashtable::CreateNode(bool top)
     return &this->storage[pos];
 }
 
-MCTSNode * NodeHashtable::CreateNode(MCTSNode * pa, int m, float p, bool t, int ts, size_t * identifier,
+MCTSNode * NodeHashtable::CreateNode(MCTSNode * pa, int m, float p, bool t, int ts, std::uint64_t * identifier,
     int depth)
 {
     // "hash"
     // because math, it won't overflow, and even if it does, it's not a big deal...
     MCTSNode new_node = MCTSNode(pa, m, p, t, ts, identifier, depth);
-    size_t* new_id = new_node.GetId();
-    size_t pos = (new_id[0] + new_id[1]) % this->storage.size();
+    std::uint64_t* new_id = new_node.GetId();
+    std::uint64_t pos = (new_id[0] + new_id[1]) % this->storage.size();
     // get pos
-    for (size_t offset = 0; offset < this->storage.size(); offset++)
+    for (std::uint64_t offset = 0; offset < this->storage.size(); offset++)
     {
         if (!this->storage[(pos + offset) % this->storage.size()].IsActive())
         {
@@ -100,14 +100,14 @@ MCTSNode * NodeHashtable::CreateNode(MCTSNode * pa, int m, float p, bool t, int 
     return &this->storage[pos];
 }
 
-MCTSNode * NodeHashtable::GetNodeById(size_t * id, int depth)
+MCTSNode * NodeHashtable::GetNodeById(std::uint64_t * id, int depth)
 {
-    size_t pos = (id[0] + id[1]) % this->storage.size();
-    for (size_t offset = 0; offset < this->storage.size(); offset++)
+    std::uint64_t pos = (id[0] + id[1]) % this->storage.size();
+    for (std::uint64_t offset = 0; offset < this->storage.size(); offset++)
     {
         if (!this->storage[(pos + offset) % this->storage.size()].IsActive())
             return nullptr;  // node doesn't exist
-        size_t* local_id = this->storage[(pos + offset) % this->storage.size()].GetId();
+        std::uint64_t* local_id = this->storage[(pos + offset) % this->storage.size()].GetId();
         if (local_id[0] == id[0] && local_id[1] == id[1] &&
             this->storage[(pos + offset) % this->storage.size()].GetDepth() == depth)
         {
@@ -115,16 +115,16 @@ MCTSNode * NodeHashtable::GetNodeById(size_t * id, int depth)
             break;
         }
     }
-    size_t* found_id = this->storage[pos].GetId();
+    std::uint64_t* found_id = this->storage[pos].GetId();
     if (found_id[0] == id[0] && found_id[1] == id[1] && this->storage[pos].GetDepth() == depth)
         return &this->storage[pos];
     return nullptr;  // node doesn't exist
 }
 
-size_t NodeHashtable::CountActive()
+std::uint64_t NodeHashtable::CountActive()
 {
-    size_t counter = 0;
-    for (size_t i = 0; i < this->storage.size(); i++)
+    std::uint64_t counter = 0;
+    for (std::uint64_t i = 0; i < this->storage.size(); i++)
     {
         if (this->storage[i].IsActive())
             counter++;
@@ -132,17 +132,17 @@ size_t NodeHashtable::CountActive()
     return counter;
 }
 
-void NodeHashtable::DestroyById(size_t * id, int depth)
+void NodeHashtable::DestroyById(std::uint64_t * id, int depth)
 {
     this->GetNodeById(id, depth)->SetInactive();
 }
 
-void NodeHashtable::Rebuild(size_t length)
+void NodeHashtable::Rebuild(std::uint64_t length)
 {
     std::vector<MCTSNode> new_ht = std::vector<MCTSNode>(length);
     int min_depth = 69420;  // impossibly high depth
-    size_t min_depth_node_id[2];
-    for (size_t i = 0; i < this->storage.size(); i++)
+    std::uint64_t min_depth_node_id[2];
+    for (std::uint64_t i = 0; i < this->storage.size(); i++)
     {
         auto& elem = this->storage[i];
         if (elem.IsActive())
@@ -163,12 +163,12 @@ void NodeHashtable::Rebuild(size_t length)
         top_node->RefreshChildrenPointers(*this);
 }
 
-size_t NodeHashtable::ObjectGetDistance(size_t * id, int depth)
+std::uint64_t NodeHashtable::ObjectGetDistance(std::uint64_t * id, int depth)
 {
-    size_t pos = (id[0] + id[1]) % this->storage.size();
-    for (size_t offset = 0; offset < this->storage.size(); offset++)
+    std::uint64_t pos = (id[0] + id[1]) % this->storage.size();
+    for (std::uint64_t offset = 0; offset < this->storage.size(); offset++)
     {
-        size_t* local_id = this->storage[(pos + offset) % this->storage.size()].GetId();
+        std::uint64_t* local_id = this->storage[(pos + offset) % this->storage.size()].GetId();
         if (local_id[0] == id[0] && local_id[1] == id[1] &&
             this->storage[(pos + offset) % this->storage.size()].GetDepth() == depth)
         {
@@ -176,10 +176,10 @@ size_t NodeHashtable::ObjectGetDistance(size_t * id, int depth)
             break;
         }
     }
-    size_t* found_id = this->storage[pos].GetId();
+    std::uint64_t* found_id = this->storage[pos].GetId();
     if (found_id[0] == id[0] && found_id[1] == id[1] && this->storage[pos].GetDepth() == depth)
     {
-        size_t pos_1 = (id[0] + id[1]) % this->storage.size();
+        std::uint64_t pos_1 = (id[0] + id[1]) % this->storage.size();
         return pos_1 > pos ? this->storage.size() - (pos_1 - pos) : pos - pos_1;
     }
     return 66666;  // spooky
@@ -188,7 +188,7 @@ size_t NodeHashtable::ObjectGetDistance(size_t * id, int depth)
 void NodeHashtable::Show()
 {
     std::cout << "----------------" << std::endl;
-    for (size_t i = 0; i < this->storage.size(); i++)
+    for (std::uint64_t i = 0; i < this->storage.size(); i++)
     {
         std::cout << i << " | ";
         if (!this->storage[i].IsActive())
