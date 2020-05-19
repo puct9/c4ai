@@ -6,7 +6,7 @@
 
 
 int SSPMode();
-void StochasticSelfPlay(Model* network, float c_puct, float dir_alpha, int temp_cutoff, size_t playouts, gsl_rng* rng);
+void StochasticSelfPlay(Model* network, float c_puct, float dir_alpha, int temp_cutoff, std::uint64_t playouts, gsl_rng* rng);
 
 
 #endif

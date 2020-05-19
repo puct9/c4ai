@@ -22,7 +22,7 @@ class TrainingPipeline:
     """
 
     def __init__(self, playouts: int = 200,
-                 history: int = 1, c_puct: int = 5, dir_alpha: float = 0.16,
+                 history: int = 1, c_puct: float = 5, dir_alpha: float = 0.16,
                  buffer: deque = None, buffer_len: int = 10000,
                  model: Model = None, save_path: str = None,
                  resume: bool = False, lr_mul: float = 1,
@@ -261,19 +261,23 @@ class TrainingPipeline:
 
 
 def main() -> None:
-    # model = dnn.create_model(3)
-    model = load_model('./testXVIa/save_803.ntwk')
-    path = './testXVIa'
-    buf = pickle.load(open('./testXVIa/data_buffer.dbuf', 'rb'))
-    # buf = None
-    # 5 lr
-    pipeline = TrainingPipeline(model=model, save_path=path, dir_alpha=1.4,
+    model = dnn.create_model(3)
+    # if loading:
+    # model = load_model('./SAVE_PATH/save_XYZ.ntwk')
+    path = './SAVE_PATH'
+    buf = None
+    # if loading:
+    # buf = pickle.load(open('./SAVE_PATH/data_buffer.dbuf', 'rb'))
+    # some hyperparmaters I prepared earlier
+    pipeline = TrainingPipeline(model=model, save_path=path, dir_alpha=0.8,
                                 tb_active=True, resume=True, buffer=buf,
                                 lr_mul=1/1.5**-1, temp_cutoff=12,
                                 playouts=600, kl_tgt=1e-3, c_puct=3,
                                 buffer_len=100000, n_sp=10, minibatch_size=512,
                                 mcts_batch_size=10)
-    pipeline.run(803)
+    pipeline.run(0)
+    # if loading:
+    # pipeline.run(XYZ)
 
 
 if __name__ == '__main__':

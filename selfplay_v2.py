@@ -1,7 +1,7 @@
 """
-Windows compatible game generation
-This could could potentially be simpler on UNIX based systems. The limitation
-here is that select.select does not work on non-socket objects in Windows.
+Multithreaded selfplay game generation using subprocesses
+This should work out of the box at with Windows. Binaries will need to be
+manually compiled on other platforms and their respective run commands edited.
 """
 import random
 from subprocess import Popen, PIPE
@@ -18,7 +18,7 @@ THREADS = 6
 
 
 def do_selfplay(num: int, playouts: int,
-                c_puct: int, mdl: Model,
+                c_puct: float, mdl: Model,
                 dir_alpha: float, temp_cutoff: int,
                 *args) -> tuple:
     """
@@ -29,7 +29,7 @@ def do_selfplay(num: int, playouts: int,
         The number of selfplay games to make
     playouts: `int`
         The amount of playouts in MCTS
-    c_puct: `int`
+    c_puct: `float`
         PUCT for MCTS
     mdl: `tensorflow.keras.models.Model`
         Model used for predictions
@@ -53,14 +53,8 @@ def do_selfplay(num: int, playouts: int,
 
 
 def fast_selfplay(playouts: int,
-                  c_puct: int, dir_alpha: float, temp_cutoff: int,
+                  c_puct: float, dir_alpha: float, temp_cutoff: int,
                   force_seed: int = None):
-    # current binary is hardcoded to use
-    # cpuct 3
-    # dir alpha 1.4
-    # tempcutoff 12
-    # playouts 800
-    # so the arguments will be ignored until i get motivated again
     if force_seed is None:
         force_seed = random.randint(1, 4294967295)
 
@@ -70,7 +64,10 @@ def fast_selfplay(playouts: int,
                 universal_newlines=True,
                 stdin=PIPE,
                 stdout=PIPE, stderr=PIPE)
-    sub.stdin.write(f'ssp\nseed {force_seed}\nsspgo\n')
+    sub.stdin.write(f'ssp\nseed {force_seed}\nc_puct set {c_puct}\n'
+                    f'dir_alpha set {dir_alpha}\n'
+                    f'temp_cutoff set {temp_cutoff}\n'
+                    f'playouts set {playouts}\nsspgo\n')
     sub.stdin.flush()
 
     # ignore some lines we don't want

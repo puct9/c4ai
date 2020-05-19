@@ -18,6 +18,12 @@ int SSPMode()
 
     gsl_rng* rng = gsl_rng_alloc(gsl_rng_mt19937);
 
+    // default selfplay parameters that may be manually changed
+    float c_puct = 3.0f;
+    float dir_alpha = 1.3f;
+    int temp_cutoff = 12;
+    std::uint64_t playouts = 800;
+
 #ifdef _WIN32
     Model* model = model_manager.CreateModel(L"Models/temp.onnx");
 #else
@@ -46,15 +52,40 @@ int SSPMode()
             gsl_rng_set(rng, user_value);
             std::cout << "seed set to " << user_value << std::endl;
         }
+        // parameter configuration options
+        if (user_in.rfind("c_puct set ", 0) == 0)
+        {
+            std::string number = user_in.substr(11);
+            c_puct = std::stof(number);
+        }
+        if (user_in.rfind("dir_alpha set ", 0) == 0)
+        {
+            std::string number = user_in.substr(14);
+            dir_alpha = std::stof(number);
+        }
+        if (user_in.rfind("temp_cutoff set ", 0) == 0)
+        {
+            std::string number = user_in.substr(16);
+            std::stringstream(number) >> temp_cutoff;
+        }
+        if (user_in.rfind("playouts set ", 0) == 0)
+        {
+            std::string number = user_in.substr(13);
+            std::stringstream(number) >> playouts;
+        }
+        if (user_in == "params")
+        {
+            std::cout << "Parameters\nc_puct " << c_puct << "\ndir_alpha " << dir_alpha << "\ntemp_cutoff " << temp_cutoff << "\nplayouts " << playouts << std::endl;
+        }
         if (user_in == "sspgo")
-            StochasticSelfPlay(model, 3, 1.4f, 12, 800, rng);
+            StochasticSelfPlay(model, c_puct, dir_alpha, temp_cutoff, playouts, rng);
         if (user_in == "exit")
             return -1;
     }
     return -1;
 }
 
-void StochasticSelfPlay(Model* network, float c_puct, float dir_alpha, int temp_cutoff, size_t playouts, gsl_rng* rng)
+void StochasticSelfPlay(Model* network, float c_puct, float dir_alpha, int temp_cutoff, std::uint64_t playouts, gsl_rng* rng)
 {
     // prepare dirichlet
     double alpha[7];

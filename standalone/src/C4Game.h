@@ -18,6 +18,7 @@ class C4Game
 {
 private:
     int move_n;
+    int start_n; // the position might be manually set
     int move_history[42];
     unsigned long long pcs_x;
     unsigned long long pcs_o;

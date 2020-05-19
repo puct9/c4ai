@@ -17,7 +17,7 @@ MCTSNode::MCTSNode(bool top)
 #endif
 }
 
-MCTSNode::MCTSNode(MCTSNode * pa, int m, float p, bool t, int ts, size_t* id, int depth)
+MCTSNode::MCTSNode(MCTSNode * pa, int m, float p, bool t, int ts, std::uint64_t* id, int depth)
     : parent(pa), move(m), P(p), N(0), W(0.0f), terminal(t), terminal_score((float)ts), active(true),
     depth(depth)
 {
@@ -26,9 +26,9 @@ MCTSNode::MCTSNode(MCTSNode * pa, int m, float p, bool t, int ts, size_t* id, in
     this->identifier[1] = id[1];
     // depth increment
     if (depth < 22)
-        this->identifier[0] |= ((size_t)m + (size_t)1) << (3 * (depth - 1));
+        this->identifier[0] |= ((std::uint64_t)m + (std::uint64_t)1) << (3 * (depth - 1));
     else
-        this->identifier[1] |= ((size_t)m + (size_t)1) << (3 * (depth - 22));
+        this->identifier[1] |= ((std::uint64_t)m + (std::uint64_t)1) << (3 * (depth - 22));
 #ifndef _WIN32
     for (int i = 0; i < 7; i++)
         this->children[i] = nullptr;
@@ -52,7 +52,7 @@ void MCTSNode::Expand(C4Game & state, float * priors, NodeHashtable& nht)
         {
             // check terminal
             state.PlayMove(i);
-            float state_res = (float)state.GameOver();
+            int state_res = state.GameOver();
             children[i] = nht.CreateNode(this, i, priors[i] / legalsum, state_res > -1, state_res, this->identifier,
                 this->depth + 1);
             state.UndoMove();
@@ -76,14 +76,14 @@ void MCTSNode::RefreshChildrenPointers(NodeHashtable & nht)
         if (this->children[i] == nullptr)
             continue;
         // compute the next id
-        size_t predicted_id[2];
+        std::uint64_t predicted_id[2];
         predicted_id[0] = this->identifier[0];
         predicted_id[1] = this->identifier[1];
         // depth increment
         if (this->depth + 1 < 22)
-            predicted_id[0] |= ((size_t)i + (size_t)1) << (3 * (this->depth));
+            predicted_id[0] |= ((std::uint64_t)i + (std::uint64_t)1) << (3 * (this->depth));
         else
-            predicted_id[1] |= ((size_t)i + (size_t)1) << (3 * (this->depth - 21));
+            predicted_id[1] |= ((std::uint64_t)i + (std::uint64_t)1) << (3 * (this->depth - 21));
 
         this->children[i] = nht.GetNodeById(predicted_id, this->depth + 1);
     }
@@ -152,7 +152,7 @@ void MCTSNode::ShowDetailedInfo()
 void MCTSNode::WriteInfoToPV(std::vector<int>& pv)
 {
     // get the child with highest N
-    size_t best_n = 0;
+    std::uint64_t best_n = 0;
     MCTSNode* best_c = nullptr;
     for (auto& c : this->children)
     {

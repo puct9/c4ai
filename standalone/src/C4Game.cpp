@@ -34,7 +34,7 @@ void C4Game::repr_ull_as_7x6(unsigned long long v)
     std::cout << std::endl;
 }
 
-C4Game::C4Game() : move_history{}, pcs_o(0), pcs_x(0), move_n(0)
+C4Game::C4Game() : move_history{}, pcs_o(0), pcs_x(0), move_n(0), start_n(0)
 {
 }
 
@@ -96,6 +96,7 @@ C4Game::C4Game(std::string & posstr) : move_history{}, pcs_o(0), pcs_x(0), move_
         pcs_x = 0;
         move_n = 0;
     }
+    start_n = move_n;
 }
 
 bool * C4Game::LegalMoves()
@@ -261,7 +262,7 @@ void C4Game::Show()
 
 void C4Game::UndoMove()
 {
-    if (!move_n)
+    if (!(move_n - start_n))
         return;
     if (!(move_n % 2)) // it is currently X to move, so the last move was by O
         pcs_o ^= BITSH[move_history[--move_n]];
