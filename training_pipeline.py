@@ -22,7 +22,7 @@ class TrainingPipeline:
     """
 
     def __init__(self, playouts: int = 200,
-                 history: int = 1, c_puct: int = 5, dir_alpha: float = 0.16,
+                 history: int = 1, c_puct: float = 5, dir_alpha: float = 0.16,
                  buffer: deque = None, buffer_len: int = 10000,
                  model: Model = None, save_path: str = None,
                  resume: bool = False, lr_mul: float = 1,

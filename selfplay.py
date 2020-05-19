@@ -10,7 +10,7 @@ from mcts_v2 import MCTS
 
 
 def do_selfplay(num: int, playouts: int,
-                c_puct: int, mdl: Model,
+                c_puct: float, mdl: Model,
                 dir_alpha: float, temp_cutoff: int,
                 mcts_batch_size: int) -> tuple:
     """
@@ -21,7 +21,7 @@ def do_selfplay(num: int, playouts: int,
         The number of selfplay games to make
     playouts: `int`
         The amount of playouts in MCTS
-    c_puct: `int`
+    c_puct: `float`
         PUCT for MCTS
     mdl: `tensorflow.keras.models.Model`
         Model used for predictions

@@ -18,7 +18,7 @@ THREADS = 6
 
 
 def do_selfplay(num: int, playouts: int,
-                c_puct: int, mdl: Model,
+                c_puct: float, mdl: Model,
                 dir_alpha: float, temp_cutoff: int,
                 *args) -> tuple:
     """
@@ -29,7 +29,7 @@ def do_selfplay(num: int, playouts: int,
         The number of selfplay games to make
     playouts: `int`
         The amount of playouts in MCTS
-    c_puct: `int`
+    c_puct: `float`
         PUCT for MCTS
     mdl: `tensorflow.keras.models.Model`
         Model used for predictions
@@ -53,7 +53,7 @@ def do_selfplay(num: int, playouts: int,
 
 
 def fast_selfplay(playouts: int,
-                  c_puct: int, dir_alpha: float, temp_cutoff: int,
+                  c_puct: float, dir_alpha: float, temp_cutoff: int,
                   force_seed: int = None):
     if force_seed is None:
         force_seed = random.randint(1, 4294967295)
