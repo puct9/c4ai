@@ -261,6 +261,7 @@ class TrainingPipeline:
 
 
 def main() -> None:
+    # TODO: clean up this section
     # model = dnn.create_model(3)
     model = load_model('./testXVIa/save_803.ntwk')
     path = './testXVIa'
