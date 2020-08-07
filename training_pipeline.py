@@ -227,14 +227,15 @@ class TrainingPipeline:
         print(f'Retrained network successfully. kl:{round(float(kl), 5)}, '
               f'lr_mul:{round(self.lr_multiplier, 3)}')
         # make the summary
-        summary = tf.Summary()
-        for key, value in train_hist.history.items():
-            summary.value.add(tag=key, simple_value=value[0])
-        # we have some custom scalar(s) to add
-        summary.value.add(tag='lr',
-                          simple_value=self.lr_multiplier)
-        self.tf_writer.add_summary(summary, e)
-        self.tf_writer.flush()
+        if self.tf_writer is not None:
+            summary = tf.Summary()
+            for key, value in train_hist.history.items():
+                summary.value.add(tag=key, simple_value=value[0])
+            # we have some custom scalar(s) to add
+            summary.value.add(tag='lr',
+                              simple_value=self.lr_multiplier)
+            self.tf_writer.add_summary(summary, e)
+            self.tf_writer.flush()
 
     def run(self, start_cycle: int = 0) -> None:
         """
