@@ -3,3 +3,4 @@ __pycache__
 test*
 gen*
 *.onnx
+!/standalone/Release_x64/Models/*.onnx
